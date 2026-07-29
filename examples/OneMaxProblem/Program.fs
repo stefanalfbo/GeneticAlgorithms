@@ -26,6 +26,17 @@ let crossover (population: ('T list * 'T list) list) =
 
         [ h1 @ t2; h2 @ t1 ])
 
+let mutation (population: int list list) =
+    let shuffle xs =
+        xs |> List.sortBy (fun _ -> System.Random.Shared.Next())
+
+    population
+    |> List.map (fun chromosome ->
+        if System.Random.Shared.NextDouble() < 0.05 then
+            shuffle chromosome
+        else
+            chromosome)
+
 let rec algorithm population =
     let best = List.maxBy List.sum population
 
@@ -34,7 +45,7 @@ let rec algorithm population =
     if List.sum best = 1000 then
         best
     else
-        population |> evaluate |> selection |> crossover |> algorithm
+        population |> evaluate |> selection |> crossover |> mutation |> algorithm
 
 let solution = algorithm population
 
