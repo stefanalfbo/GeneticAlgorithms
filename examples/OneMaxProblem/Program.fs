@@ -1,52 +1,52 @@
 ﻿// Population of 100 individuals, each with 1000 genes (0 or 1)
 let population =
-    [ for _ in 1..100 -> [ for _ in 1..1000 -> System.Random().Next(0, 2) ] ]
+    Array.init 100 (fun _ -> Array.init 1000 (fun _ -> System.Random.Shared.Next(0, 2)))
 
-let evaluate population = List.sortBy List.sum population
+let evaluate population = Array.sortBy Array.sum population
 
 let selection population =
     population
-    |> List.chunkBySize 2
-    |> List.map (fun chunk ->
+    |> Array.chunkBySize 2
+    |> Array.map (fun chunk ->
         match chunk with
-        | [ a; b ] -> a, b
-        | [ a ] -> a, a
+        | [| a; b |] -> a, b
+        | [| a |] -> a, a
         | _ -> failwith "Invalid chunk")
 
-let crossover (population: ('T list * 'T list) list) =
+let crossover (population: ('T array * 'T array) array) =
     population
-    |> List.collect (fun (p1, p2) ->
+    |> Array.collect (fun (p1, p2) ->
         let cxPoint = System.Random.Shared.Next(1, 1001)
 
-        let h1 = p1 |> List.take cxPoint
-        let t1 = p1 |> List.skip cxPoint
+        let h1 = p1 |> Array.take cxPoint
+        let t1 = p1 |> Array.skip cxPoint
 
-        let h2 = p2 |> List.take cxPoint
-        let t2 = p2 |> List.skip cxPoint
+        let h2 = p2 |> Array.take cxPoint
+        let t2 = p2 |> Array.skip cxPoint
 
-        [ h1 @ t2; h2 @ t1 ])
+        [| Array.append h1 t2; Array.append h2 t1 |])
 
-let mutation (population: int list list) =
+let mutation (population: int array array) =
     let shuffle xs =
-        xs |> List.sortBy (fun _ -> System.Random.Shared.Next())
+        xs |> Array.sortBy (fun _ -> System.Random.Shared.Next())
 
     population
-    |> List.map (fun chromosome ->
+    |> Array.map (fun chromosome ->
         if System.Random.Shared.NextDouble() < 0.05 then
             shuffle chromosome
         else
             chromosome)
 
 let rec algorithm population =
-    let best = List.maxBy List.sum population
+    let best = Array.maxBy Array.sum population
 
-    printfn "Best solution so far: %A" (List.sum best)
+    printfn "Best solution so far: %A" (Array.sum best)
 
-    if List.sum best = 1000 then
+    if Array.sum best = 1000 then
         best
     else
         population |> evaluate |> selection |> crossover |> mutation |> algorithm
 
 let solution = algorithm population
 
-printfn "Best solution: %A" (List.sum solution)
+printfn "Best solution: %A" (Array.sum solution)
