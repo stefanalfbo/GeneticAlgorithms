@@ -1,11 +1,13 @@
 ﻿namespace GeneticAlgorithms
 
+type Options = { population_size: int }
+
 module Genetic =
 
-    let evaluate population fitness_function =
+    let evaluate population fitness_function (opts: Options) =
         population |> Array.sortBy fitness_function
 
-    let select population =
+    let select (opts: Options) population =
         population
         |> Array.chunkBySize 2
         |> Array.map (fun chunk ->
@@ -14,7 +16,7 @@ module Genetic =
             | [| a |] -> a, a
             | _ -> failwith "Invalid chunk")
 
-    let crossover (population: ('T array * 'T array) array) =
+    let crossover (opts: Options) (population: ('T array * 'T array) array) =
         population
         |> Array.collect (fun (p1, p2) ->
             let cxPoint = System.Random.Shared.Next(1, Array.length p1)
@@ -27,7 +29,7 @@ module Genetic =
 
             [| Array.append h1 t2; Array.append h2 t1 |])
 
-    let mutation (population: int array array) =
+    let mutation (opts: Options) (population: int array array) =
         let shuffle xs =
             xs |> Array.sortBy (fun _ -> System.Random.Shared.Next())
 
@@ -38,8 +40,8 @@ module Genetic =
             else
                 chromosome)
 
-    let rec evolve fitness_function genotype max_fitness population =
-        let next_generation = evaluate population fitness_function
+    let rec evolve (opts: Options) fitness_function genotype max_fitness population =
+        let next_generation = evaluate population fitness_function opts
 
         let best = next_generation.[0]
 
@@ -49,16 +51,15 @@ module Genetic =
             best
         else
             next_generation
-            |> select
-            |> crossover
-            |> mutation
-            |> evolve fitness_function genotype max_fitness
+            |> select opts
+            |> crossover opts
+            |> mutation opts
+            |> evolve opts fitness_function genotype max_fitness
 
-    let initialize genotype =
-        // Population of 100 individuals, each with 1000 genes (0 or 1)
-        Array.init 100 (fun _ -> genotype ())
+    let initialize genotype (opts: Options) =
+        Array.init opts.population_size (fun _ -> genotype ())
 
-    let run fitness_function genotype max_fitness =
-        let population = initialize genotype
+    let run fitness_function genotype max_fitness (opts: Options) =
+        let population = initialize genotype opts
 
-        population |> evolve fitness_function genotype max_fitness
+        population |> evolve opts fitness_function genotype max_fitness
