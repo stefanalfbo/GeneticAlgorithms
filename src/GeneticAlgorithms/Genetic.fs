@@ -5,7 +5,7 @@ type Options = { population_size: int }
 module Genetic =
 
     let evaluate population fitness_function (opts: Options) =
-        population |> Array.sortBy fitness_function
+        population |> Array.sortByDescending fitness_function
 
     let select (opts: Options) population =
         population
