@@ -4,10 +4,15 @@ type Options = { population_size: int }
 
 module Genetic =
 
-    let evaluate population fitness_function (opts: Options) =
-        population |> Array.sortByDescending fitness_function
+    let evaluate (population: Chromosome<'Gene> array) (fitnessFunction: Chromosome<'Gene> -> float) (_opts: Options) =
+        population
+        |> Array.map (fun chromosome ->
+            { chromosome with
+                fitness = fitnessFunction chromosome
+                age = chromosome.age + 1 })
+        |> Array.sortByDescending (fun chromosome -> chromosome.fitness)
 
-    let select (opts: Options) population =
+    let select (_opts: Options) population =
         population
         |> Array.chunkBySize 2
         |> Array.map (fun chunk ->
@@ -16,50 +21,51 @@ module Genetic =
             | [| a |] -> a, a
             | _ -> failwith "Invalid chunk")
 
-    let crossover (opts: Options) (population: ('T array * 'T array) array) =
+    let crossover (opts: Options) (population: (Chromosome<'Gene> * Chromosome<'Gene>) array) =
         population
         |> Array.collect (fun (p1, p2) ->
-            let cxPoint = System.Random.Shared.Next(1, Array.length p1)
+            let cxPoint = System.Random.Shared.Next(1, p1.genes.Length)
 
-            let h1 = p1 |> Array.take cxPoint
-            let t1 = p1 |> Array.skip cxPoint
+            let h1 = p1.genes |> Array.take cxPoint
+            let t1 = p1.genes |> Array.skip cxPoint
 
-            let h2 = p2 |> Array.take cxPoint
-            let t2 = p2 |> Array.skip cxPoint
+            let h2 = p2.genes |> Array.take cxPoint
+            let t2 = p2.genes |> Array.skip cxPoint
 
-            [| Array.append h1 t2; Array.append h2 t1 |])
+            [| { p1 with genes = Array.append h1 t2 }
+               { p2 with genes = Array.append h2 t1 } |])
 
-    let mutation (opts: Options) (population: int array array) =
+    let mutation (opts: Options) (population: Chromosome<'Gene> array) =
         let shuffle xs =
             xs |> Array.sortBy (fun _ -> System.Random.Shared.Next())
 
         population
         |> Array.map (fun chromosome ->
             if System.Random.Shared.NextDouble() < 0.05 then
-                shuffle chromosome
+                { chromosome with genes = shuffle chromosome.genes }
             else
                 chromosome)
 
-    let rec evolve (opts: Options) fitness_function genotype max_fitness population =
-        let next_generation = evaluate population fitness_function opts
+    let rec evolve (opts: Options) (problem: Problem<'Gene>) population =
+        let next_generation = evaluate population problem.fitness_function opts
 
         let best = next_generation.[0]
 
-        printfn "Current Best %d" (fitness_function best)
+        printfn "Current Best %f" (problem.fitness_function best)
 
-        if fitness_function best = max_fitness then
+        if problem.terminate next_generation then
             best
         else
             next_generation
             |> select opts
             |> crossover opts
             |> mutation opts
-            |> evolve opts fitness_function genotype max_fitness
+            |> evolve opts problem
 
     let initialize genotype (opts: Options) =
         Array.init opts.population_size (fun _ -> genotype ())
 
-    let run fitness_function genotype max_fitness (opts: Options) =
-        let population = initialize genotype opts
+    let run (problem: Problem<'Gene>) (opts: Options) =
+        let population = initialize problem.genotype opts
 
-        population |> evolve opts fitness_function genotype max_fitness
+        population |> evolve opts problem

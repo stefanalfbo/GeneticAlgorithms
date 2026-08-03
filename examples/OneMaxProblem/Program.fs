@@ -1,14 +1,28 @@
-﻿let genotype _ =
-    Array.init 1000 (fun _ -> System.Random.Shared.Next(0, 2))
-
 open GeneticAlgorithms
 
-let fitness_function (chromosome: int array) = Array.sum chromosome
+let max_fitness = 1000.0
 
-let max_fitness = 1000
+let genotype () =
+    let genes = Array.init 1000 (fun _ -> System.Random.Shared.Next(0, 2))
+
+    { genes = genes
+      size = genes.Length
+      fitness = 0.0
+      age = 0 }
+
+let fitness_function (chromosome: Chromosome<int>) =
+    chromosome.genes |> Array.sum |> float
+
+let terminate (population: seq<Chromosome<int>>) =
+    population |> Seq.exists (fun chromosome -> chromosome.fitness >= max_fitness)
+
+let problem: Problem<int> =
+    { genotype = genotype
+      fitness_function = fitness_function
+      terminate = terminate }
 
 let options = { population_size = 100 }
 
-let solution = Genetic.run fitness_function genotype max_fitness options
+let solution = Genetic.run problem options
 
-printfn "Best solution: %A" (fitness_function solution)
+printfn "Best solution: %A" solution.fitness
