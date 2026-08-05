@@ -12,7 +12,7 @@ let genotype () =
 
 let fitness_function (chromosome: Chromosome<int>) = chromosome.genes |> Array.sum |> float
 
-let terminate (population: seq<Chromosome<int>>) (_generation: int) =
+let terminate (population: seq<Chromosome<int>>) (_generation: int) (_temperature: float) =
     population |> Seq.exists (fun chromosome -> chromosome.fitness >= max_fitness)
 
 let problem: Problem<int> =

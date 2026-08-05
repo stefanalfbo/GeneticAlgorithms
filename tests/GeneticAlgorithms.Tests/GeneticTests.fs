@@ -169,7 +169,7 @@ let runTests =
               let problem =
                   { genotype = genotype
                     fitness_function = fun c -> float c.genes.[0]
-                    terminate = fun _ _ -> true }
+                    terminate = fun _ _ _ -> true }
 
               let result = Genetic.run problem { population_size = genes.Length }
 
@@ -185,7 +185,7 @@ let runTests =
                   { genotype = genotype
                     fitness_function = fun _ -> 0.0
                     terminate =
-                      fun _ generation ->
+                      fun _ generation _ ->
                           observedGenerations.Add generation
                           generation >= 2 }
 
@@ -194,4 +194,30 @@ let runTests =
               Expect.sequenceEqual
                   observedGenerations
                   [ 0; 1; 2 ]
-                  "terminate should see each generation in order starting from zero" ]
+                  "terminate should see each generation in order starting from zero"
+
+          testCase "passes the current temperature to terminate"
+          <| fun _ ->
+              let observedTemperatures = System.Collections.Generic.List<float>()
+
+              let genotype () = makeChromosome [| 9 |]
+
+              let problem =
+                  { genotype = genotype
+                    fitness_function = fun c -> float c.genes.[0]
+                    terminate =
+                      fun _ generation temperature ->
+                          observedTemperatures.Add temperature
+                          generation >= 2 }
+
+              Genetic.run problem { population_size = 4 } |> ignore
+
+              let roundedTemperatures =
+                  observedTemperatures
+                  |> Seq.map (fun value -> System.Math.Round(value, 3))
+                  |> Seq.toList
+
+              Expect.sequenceEqual
+                  roundedTemperatures
+                  [ 7.2; 5.76; 4.608 ]
+                  "terminate should receive the computed temperature for each generation" ]

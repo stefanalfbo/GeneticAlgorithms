@@ -56,7 +56,7 @@ Defines how a specific optimization problem behaves.
 type Problem<'Gene> =
     { genotype: unit -> Chromosome<'Gene>
       fitness_function: Chromosome<'Gene> -> float
-  terminate: seq<Chromosome<'Gene>> -> int -> bool }
+      terminate: seq<Chromosome<'Gene>> -> int -> float -> bool }
 ```
 
 ### `Options`
@@ -77,9 +77,9 @@ type Options = { population_size: int }
 4. Select parents by pairing neighboring chromosomes.
 5. Produce children using single-point crossover.
 6. Apply mutation to some chromosomes.
-7. Repeat until the termination function returns `true` for the current population and generation.
+7. Repeat until the termination function returns `true` for the current population, generation, and temperature.
 
-During execution, the current best fitness is printed for each generation. The termination callback receives both the evaluated population and the current generation number, so problems can stop either on solution quality, a generation cap, or a combination of both.
+During execution, the current best fitness is printed for each generation. The termination callback receives the evaluated population, the current generation number, and a temperature value computed from recent fitness progress, so problems can stop either on solution quality, a generation cap, temperature behavior, or a combination of those signals.
 
 ## Getting Started
 
@@ -119,7 +119,7 @@ let genotype () =
 let fitness_function (chromosome: Chromosome<int>) =
     chromosome.genes |> Array.sum |> float
 
-let terminate (population: seq<Chromosome<int>>) (_generation: int) =
+let terminate (population: seq<Chromosome<int>>) (_generation: int) (_temperature: float) =
     population |> Seq.exists (fun chromosome -> chromosome.fitness >= 10.0)
 
 let problem: Problem<int> =
@@ -138,7 +138,7 @@ let solution = Genetic.run problem options
 
 The HelloWorld example evolves a random lowercase character string toward the target `helloworld`. Its fitness function uses Jaro similarity, which makes it a simple example of working with `char` chromosomes instead of binary genes.
 
-Its termination function checks the current population and ignores the generation argument because the fitness threshold alone is enough for this example.
+Its termination function checks the current population and ignores the generation and temperature arguments because the fitness threshold alone is enough for this example.
 
 Run it with:
 
@@ -156,7 +156,7 @@ Best solution: helloworld (fitness: 1.000000)
 
 The OneMax example solves the classic benchmark problem of maximizing the number of `1`s in a binary chromosome.
 
-Like HelloWorld, it stops based on population fitness and ignores the generation argument passed to the termination callback.
+Like HelloWorld, it stops based on population fitness and ignores the generation and temperature arguments passed to the termination callback.
 
 Run it with:
 
@@ -176,6 +176,7 @@ The test project currently verifies the main building blocks of the algorithm:
 * `Genetic.mutation` preserves population size and gene membership
 * `Genetic.initialize` creates the requested number of chromosomes
 * `Genetic.run` returns the fittest chromosome when termination is reached
+* `Genetic.run` forwards generation and temperature values to the termination callback
 
 ## Design Notes
 

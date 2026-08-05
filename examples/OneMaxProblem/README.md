@@ -50,7 +50,7 @@ Because the fitness function is straightforward, the OneMax problem is an excell
 6. Form the next generation.
 7. Repeat until an optimal solution is found or the termination function decides to stop.
 
-In this example, the termination function receives both the current population and the generation number, but it only uses the population because the fitness target is enough.
+In this example, the termination function receives the current population, the generation number, and the temperature value, but it only uses the population because the fitness target is enough.
 
 ## Running the Example
 

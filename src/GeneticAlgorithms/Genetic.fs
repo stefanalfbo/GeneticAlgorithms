@@ -47,21 +47,29 @@ module Genetic =
             else
                 chromosome)
 
-    let rec evolve (opts: Options) (problem: Problem<'Gene>) (generation: int) (population: Chromosome<'Gene> array) =
+    let rec evolve
+        (opts: Options)
+        (problem: Problem<'Gene>)
+        (generation: int)
+        (last_max_fitness: float)
+        (temperature: float)
+        (population: Chromosome<'Gene> array)
+        =
         let next_population = evaluate population problem.fitness_function opts
 
         let best = next_population.[0]
+        let new_temperature = 0.8 * (temperature + (best.fitness - last_max_fitness))
 
         printfn "Current Best %f" (problem.fitness_function best)
 
-        if problem.terminate next_population generation then
+        if problem.terminate next_population generation new_temperature then
             best
         else
             next_population
             |> select opts
             |> crossover opts
             |> mutation opts
-            |> evolve opts problem (generation + 1)
+            |> evolve opts problem (generation + 1) best.fitness new_temperature
 
     let initialize genotype (opts: Options) =
         Array.init opts.population_size (fun _ -> genotype ())
@@ -69,5 +77,7 @@ module Genetic =
     let run (problem: Problem<'Gene>) (opts: Options) =
         let population = initialize problem.genotype opts
         let first_generation = 0
+        let temperature = 0
+        let first_max_fitness = 0.0
 
-        population |> evolve opts problem first_generation
+        population |> evolve opts problem first_generation first_max_fitness temperature

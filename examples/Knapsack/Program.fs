@@ -29,7 +29,7 @@ let fitness_function (chromosome: Chromosome<int>) =
 
     if over_limit then 0.0 else float potential_profits
 
-let terminate _population generation = generation >= 100
+let terminate _population generation _temperature = generation >= 100
 
 let problem: Problem<int> =
     { genotype = genotype
