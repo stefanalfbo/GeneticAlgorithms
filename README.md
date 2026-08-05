@@ -56,7 +56,7 @@ Defines how a specific optimization problem behaves.
 type Problem<'Gene> =
     { genotype: unit -> Chromosome<'Gene>
       fitness_function: Chromosome<'Gene> -> float
-      terminate: seq<Chromosome<'Gene>> -> bool }
+  terminate: seq<Chromosome<'Gene>> -> int -> bool }
 ```
 
 ### `Options`
@@ -77,9 +77,9 @@ type Options = { population_size: int }
 4. Select parents by pairing neighboring chromosomes.
 5. Produce children using single-point crossover.
 6. Apply mutation to some chromosomes.
-7. Repeat until the termination function returns `true`.
+7. Repeat until the termination function returns `true` for the current population and generation.
 
-During execution, the current best fitness is printed for each generation.
+During execution, the current best fitness is printed for each generation. The termination callback receives both the evaluated population and the current generation number, so problems can stop either on solution quality, a generation cap, or a combination of both.
 
 ## Getting Started
 
@@ -119,7 +119,7 @@ let genotype () =
 let fitness_function (chromosome: Chromosome<int>) =
     chromosome.genes |> Array.sum |> float
 
-let terminate (population: seq<Chromosome<int>>) =
+let terminate (population: seq<Chromosome<int>>) (_generation: int) =
     population |> Seq.exists (fun chromosome -> chromosome.fitness >= 10.0)
 
 let problem: Problem<int> =
@@ -138,6 +138,8 @@ let solution = Genetic.run problem options
 
 The HelloWorld example evolves a random lowercase character string toward the target `helloworld`. Its fitness function uses Jaro similarity, which makes it a simple example of working with `char` chromosomes instead of binary genes.
 
+Its termination function checks the current population and ignores the generation argument because the fitness threshold alone is enough for this example.
+
 Run it with:
 
 ```powershell
@@ -153,6 +155,8 @@ Best solution: helloworld (fitness: 1.000000)
 ### OneMaxProblem
 
 The OneMax example solves the classic benchmark problem of maximizing the number of `1`s in a binary chromosome.
+
+Like HelloWorld, it stops based on population fitness and ignores the generation argument passed to the termination callback.
 
 Run it with:
 

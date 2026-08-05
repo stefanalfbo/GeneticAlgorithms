@@ -42,7 +42,9 @@ Because the problem is easy to visualize, it is a useful example for understandi
 4. Create offspring through crossover.
 5. Apply mutation to introduce variation.
 6. Form the next generation.
-7. Repeat until a chromosome reaches the termination threshold.
+7. Repeat until the termination function decides to stop.
+
+In this example, the termination function receives both the current population and the generation number, but it only uses the population because a fitness threshold is sufficient.
 
 ## Running the Example
 

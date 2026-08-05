@@ -68,7 +68,7 @@ let fitness_function (chromosome: Chromosome<char>) =
 
     jaro_similarity guess target
 
-let terminate (population: seq<Chromosome<char>>) =
+let terminate (population: seq<Chromosome<char>>) (_generation: int) =
     population |> Seq.exists (fun chromosome -> chromosome.fitness > 0.95)
 
 let problem: Problem<char> =

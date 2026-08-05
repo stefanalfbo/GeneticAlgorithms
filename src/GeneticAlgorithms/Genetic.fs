@@ -42,30 +42,32 @@ module Genetic =
         population
         |> Array.map (fun chromosome ->
             if System.Random.Shared.NextDouble() < 0.05 then
-                { chromosome with genes = shuffle chromosome.genes }
+                { chromosome with
+                    genes = shuffle chromosome.genes }
             else
                 chromosome)
 
-    let rec evolve (opts: Options) (problem: Problem<'Gene>) population =
-        let next_generation = evaluate population problem.fitness_function opts
+    let rec evolve (opts: Options) (problem: Problem<'Gene>) (generation: int) (population: Chromosome<'Gene> array) =
+        let next_population = evaluate population problem.fitness_function opts
 
-        let best = next_generation.[0]
+        let best = next_population.[0]
 
         printfn "Current Best %f" (problem.fitness_function best)
 
-        if problem.terminate next_generation then
+        if problem.terminate next_population generation then
             best
         else
-            next_generation
+            next_population
             |> select opts
             |> crossover opts
             |> mutation opts
-            |> evolve opts problem
+            |> evolve opts problem (generation + 1)
 
     let initialize genotype (opts: Options) =
         Array.init opts.population_size (fun _ -> genotype ())
 
     let run (problem: Problem<'Gene>) (opts: Options) =
         let population = initialize problem.genotype opts
+        let first_generation = 0
 
-        population |> evolve opts problem
+        population |> evolve opts problem first_generation

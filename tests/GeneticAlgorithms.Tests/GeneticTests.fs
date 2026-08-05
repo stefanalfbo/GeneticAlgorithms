@@ -35,9 +35,7 @@ let evaluateTests =
           testCase "sorts the population by descending fitness"
           <| fun _ ->
               let population =
-                  [| makeChromosome [| 1 |]
-                     makeChromosome [| 3 |]
-                     makeChromosome [| 2 |] |]
+                  [| makeChromosome [| 1 |]; makeChromosome [| 3 |]; makeChromosome [| 2 |] |]
 
               let fitness (c: Chromosome<int>) = float c.genes.[0]
 
@@ -66,9 +64,7 @@ let selectTests =
           testCase "pairs the leftover chromosome with itself for an odd population"
           <| fun _ ->
               let population =
-                  [| makeChromosome [| 1 |]
-                     makeChromosome [| 2 |]
-                     makeChromosome [| 3 |] |]
+                  [| makeChromosome [| 1 |]; makeChromosome [| 2 |]; makeChromosome [| 3 |] |]
 
               let result = Genetic.select opts population
 
@@ -130,7 +126,11 @@ let mutationTests =
 
               for c in result do
                   Expect.equal c.genes.Length chromosome.genes.Length "gene count should be preserved"
-                  Expect.containsAll c.genes chromosome.genes "mutated genes should be a permutation of the original genes" ]
+
+                  Expect.containsAll
+                      c.genes
+                      chromosome.genes
+                      "mutated genes should be a permutation of the original genes" ]
 
 [<Tests>]
 let initializeTests =
@@ -147,7 +147,11 @@ let initializeTests =
               let result = Genetic.initialize genotype { population_size = 5 }
 
               Expect.equal result.Length 5 "should create population_size chromosomes"
-              Expect.equal (result |> Array.map (fun c -> c.genes.[0])) [| 1; 2; 3; 4; 5 |] "should call the genotype function for each chromosome" ]
+
+              Expect.equal
+                  (result |> Array.map (fun c -> c.genes.[0]))
+                  [| 1; 2; 3; 4; 5 |]
+                  "should call the genotype function for each chromosome" ]
 
 [<Tests>]
 let runTests =
@@ -165,8 +169,29 @@ let runTests =
               let problem =
                   { genotype = genotype
                     fitness_function = fun c -> float c.genes.[0]
-                    terminate = fun _ -> true }
+                    terminate = fun _ _ -> true }
 
               let result = Genetic.run problem { population_size = genes.Length }
 
-              Expect.equal result.genes.[0] 9 "should return the chromosome with the highest fitness" ]
+              Expect.equal result.genes.[0] 9 "should return the chromosome with the highest fitness"
+
+          testCase "passes the current generation to terminate"
+          <| fun _ ->
+              let observedGenerations = System.Collections.Generic.List<int>()
+
+              let genotype () = makeChromosome [| 0; 1 |]
+
+              let problem =
+                  { genotype = genotype
+                    fitness_function = fun _ -> 0.0
+                    terminate =
+                      fun _ generation ->
+                          observedGenerations.Add generation
+                          generation >= 2 }
+
+              Genetic.run problem { population_size = 4 } |> ignore
+
+              Expect.sequenceEqual
+                  observedGenerations
+                  [ 0; 1; 2 ]
+                  "terminate should see each generation in order starting from zero" ]
