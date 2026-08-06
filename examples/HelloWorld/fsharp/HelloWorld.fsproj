@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\GeneticAlgorithms\GeneticAlgorithms.fsproj" />
+    <ProjectReference Include="..\..\..\src\GeneticAlgorithms\GeneticAlgorithms.fsproj" />
   </ItemGroup>
 
 </Project>

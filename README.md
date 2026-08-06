@@ -26,10 +26,11 @@ This library is heavily influenced by the ideas and teaching approach in *Geneti
 ## Project Structure
 
 ```text
-src/GeneticAlgorithms         Core library
-examples/HelloWorld           Character-based string evolution example
-examples/OneMaxProblem        Binary optimization benchmark example
-tests/GeneticAlgorithms.Tests Automated tests with Expecto
+src/GeneticAlgorithms                Core library
+examples/HelloWorld/fsharp           F# character-based string evolution example
+examples/OneMaxProblem/fsharp        F# binary optimization benchmark example
+examples/Knapsack/fsharp             F# constrained optimization example
+tests/GeneticAlgorithms.Tests        Automated tests with Expecto
 ```
 
 ## Core Concepts
@@ -143,7 +144,7 @@ Its termination function checks the current population and ignores the generatio
 Run it with:
 
 ```powershell
-dotnet run --project examples/HelloWorld
+dotnet run --project examples/HelloWorld/fsharp
 ```
 
 Typical output ends with a string result similar to:
@@ -161,8 +162,20 @@ Like HelloWorld, it stops based on population fitness and ignores the generation
 Run it with:
 
 ```powershell
-dotnet run --project examples/OneMaxProblem
+dotnet run --project examples/OneMaxProblem/fsharp
 ```
+
+### Knapsack
+
+The Knapsack example solves a small 0/1 knapsack problem where binary genes indicate whether an item is packed. Candidate solutions that exceed the weight limit receive zero fitness.
+
+Run it with:
+
+```powershell
+dotnet run --project examples/Knapsack/fsharp
+```
+
+This example is useful for exploring constrained optimization rather than pure maximization.
 
 This is a useful baseline for validating the library's evaluation, selection, crossover, and mutation behavior.
 

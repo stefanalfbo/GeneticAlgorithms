@@ -57,7 +57,7 @@ In this example, the termination function receives the current population, the g
 From the repository root:
 
 ```powershell
-dotnet run --project examples/OneMaxProblem
+dotnet run --project examples/OneMaxProblem/fsharp
 ```
 
 ## Expected Output

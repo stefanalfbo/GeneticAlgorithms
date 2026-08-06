@@ -56,7 +56,7 @@ In this example, the termination function receives the current population, the g
 From the repository root:
 
 ```powershell
-dotnet run --project examples/Knapsack
+dotnet run --project examples/Knapsack/fsharp
 ```
 
 ## Expected Output

@@ -13,11 +13,11 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "GeneticAlgorithms.Tests", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples", "examples", "{B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "OneMaxProblem", "examples\OneMaxProblem\OneMaxProblem.fsproj", "{1B2DC475-1E51-47E7-940A-6D3E2B49987E}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "OneMaxProblem", "examples\OneMaxProblem\fsharp\OneMaxProblem.fsproj", "{1B2DC475-1E51-47E7-940A-6D3E2B49987E}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "HelloWorld", "examples\HelloWorld\HelloWorld.fsproj", "{C5B3BD3F-F419-4BD3-9248-1F6426A531A8}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "HelloWorld", "examples\HelloWorld\fsharp\HelloWorld.fsproj", "{C5B3BD3F-F419-4BD3-9248-1F6426A531A8}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Knapsack", "examples\Knapsack\Knapsack.fsproj", "{67E07156-3B52-423E-BF3B-8B0215A72481}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Knapsack", "examples\Knapsack\fsharp\Knapsack.fsproj", "{67E07156-3B52-423E-BF3B-8B0215A72481}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
