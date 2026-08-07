@@ -1,6 +1,9 @@
 ﻿namespace GeneticAlgorithms
 
-type Options = { population_size: int }
+type Options =
+    { population_size: int }
+
+    member this.PopulationSize = this.population_size
 
 module Genetic =
 

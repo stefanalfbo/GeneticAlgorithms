@@ -31,6 +31,7 @@ examples/HelloWorld/fsharp           F# character-based string evolution example
 examples/OneMaxProblem/fsharp        F# binary optimization benchmark example
 examples/Knapsack/fsharp             F# constrained optimization example
 tests/GeneticAlgorithms.Tests        Automated tests with Expecto
+tests/GeneticAlgorithms.CSharpSmoke  Minimal C# consumer validating the interop layer
 ```
 
 ## Core Concepts
@@ -132,6 +133,24 @@ let options = { population_size = 100 }
 
 let solution = Genetic.run problem options
 ```
+
+## C# Interop
+
+The core API is implemented in idiomatic F#, but the library also exposes a small C#-friendly bridge through `GeneticAlgorithms.Interop`. This avoids forcing C# examples to construct F# records with curried function fields directly.
+
+```csharp
+using GeneticAlgorithms;
+
+var problem = Interop.CreateProblem<int>(
+  genotype: () => Interop.CreateChromosome(new[] { Random.Shared.Next(0, 2) }),
+  fitnessFunction: chromosome => chromosome.Genes[0],
+  terminate: (population, generation, temperature) =>
+    population.Any(chromosome => chromosome.Fitness >= 1.0) || generation >= 10);
+
+var solution = Interop.Run(problem, populationSize: 8);
+```
+
+The smoke project in `tests/GeneticAlgorithms.CSharpSmoke` exists specifically to validate that this API stays straightforward to consume from C#.
 
 ## Examples
 

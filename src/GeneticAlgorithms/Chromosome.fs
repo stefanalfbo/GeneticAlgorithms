@@ -6,3 +6,8 @@ type Chromosome<'T> =
       size: int
       fitness: float
       age: int }
+
+    member this.Genes = this.genes
+    member this.Size = this.size
+    member this.Fitness = this.fitness
+    member this.Age = this.age
