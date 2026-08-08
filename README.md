@@ -28,6 +28,7 @@ This library is heavily influenced by the ideas and teaching approach in *Geneti
 ```text
 src/GeneticAlgorithms                Core library
 examples/HelloWorld/fsharp           F# character-based string evolution example
+examples/OneMaxProblem/csharp        C# binary optimization benchmark example
 examples/OneMaxProblem/fsharp        F# binary optimization benchmark example
 examples/Knapsack/fsharp             F# constrained optimization example
 tests/GeneticAlgorithms.Tests        Automated tests with Expecto
@@ -183,6 +184,12 @@ Run it with:
 
 ```powershell
 dotnet run --project examples/OneMaxProblem/fsharp
+```
+
+There is also a C# version of the same example:
+
+```powershell
+dotnet run --project examples/OneMaxProblem/csharp
 ```
 
 ### Knapsack
