@@ -136,19 +136,20 @@ let solution = Genetic.run problem options
 
 ## C# Interop
 
-The core API is implemented in idiomatic F#, but the library also exposes a small C#-friendly bridge through `GeneticAlgorithms.Interop`. This avoids forcing C# examples to construct F# records with curried function fields directly.
+The core API is implemented in idiomatic F#, but the library also exposes a small C#-friendly facade through `GeneticAlgorithms.GeneticAlgorithm`. This avoids forcing C# examples to construct F# records with curried function fields directly.
 
 ```csharp
 using GeneticAlgorithms;
 
-var problem = Interop.CreateProblem<int>(
-  genotype: () => Interop.CreateChromosome(new[] { Random.Shared.Next(0, 2) }),
+var solution = GeneticAlgorithm.Run(
+  genotype: () => GeneticAlgorithm.CreateChromosome(new[] { Random.Shared.Next(0, 2) }),
   fitnessFunction: chromosome => chromosome.Genes[0],
   terminate: (population, generation, temperature) =>
-    population.Any(chromosome => chromosome.Fitness >= 1.0) || generation >= 10);
-
-var solution = Interop.Run(problem, populationSize: 8);
+    population.Any(chromosome => chromosome.Fitness >= 1.0) || generation >= 10,
+  populationSize: 8);
 ```
+
+The older `Interop` type remains available as a compatibility wrapper, but new C# examples should prefer `GeneticAlgorithm`.
 
 The smoke project in `tests/GeneticAlgorithms.CSharpSmoke` exists specifically to validate that this API stays straightforward to consume from C#.
 
