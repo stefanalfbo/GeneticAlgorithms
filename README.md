@@ -27,6 +27,7 @@ This library is heavily influenced by the ideas and teaching approach in *Geneti
 
 ```text
 src/GeneticAlgorithms                Core library
+examples/HelloWorld/csharp          C# character-based string evolution example
 examples/HelloWorld/fsharp           F# character-based string evolution example
 examples/OneMaxProblem/csharp        C# binary optimization benchmark example
 examples/OneMaxProblem/fsharp        F# binary optimization benchmark example
@@ -166,6 +167,12 @@ Run it with:
 
 ```powershell
 dotnet run --project examples/HelloWorld/fsharp
+```
+
+There is also a C# version of the same example:
+
+```powershell
+dotnet run --project examples/HelloWorld/csharp
 ```
 
 Typical output ends with a string result similar to:
