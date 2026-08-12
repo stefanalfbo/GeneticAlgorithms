@@ -29,6 +29,7 @@ This library is heavily influenced by the ideas and teaching approach in *Geneti
 src/GeneticAlgorithms                Core library
 examples/HelloWorld/csharp          C# character-based string evolution example
 examples/HelloWorld/fsharp           F# character-based string evolution example
+examples/Knapsack/csharp            C# constrained optimization example
 examples/OneMaxProblem/csharp        C# binary optimization benchmark example
 examples/OneMaxProblem/fsharp        F# binary optimization benchmark example
 examples/Knapsack/fsharp             F# constrained optimization example
@@ -207,6 +208,12 @@ Run it with:
 
 ```powershell
 dotnet run --project examples/Knapsack/fsharp
+```
+
+There is also a C# version of the same example:
+
+```powershell
+dotnet run --project examples/Knapsack/csharp
 ```
 
 This example is useful for exploring constrained optimization rather than pure maximization.
