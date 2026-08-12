@@ -158,6 +158,8 @@ The smoke project in `tests/GeneticAlgorithms.CSharpSmoke` exists specifically t
 
 ## Examples
 
+See [examples/README.md](examples/README.md) for an index of all example projects and their available language variants.
+
 ### HelloWorld
 
 The HelloWorld example evolves a random lowercase character string toward the target `helloworld`. Its fitness function uses Jaro similarity, which makes it a simple example of working with `char` chromosomes instead of binary genes.
