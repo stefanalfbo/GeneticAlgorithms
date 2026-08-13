@@ -27,6 +27,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Knapsack", "examples\Knapsa
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Knapsack.CSharp", "examples\Knapsack\csharp\Knapsack.CSharp.csproj", "{D0DA2B8F-A8D2-4514-B261-4D824D402A0A}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MultipleObjectives", "examples\MultipleObjectives\fsharp\MultipleObjectives.fsproj", "{74C19A25-3364-47D8-B711-592D90D21D10}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -145,6 +147,18 @@ Global
 		{D0DA2B8F-A8D2-4514-B261-4D824D402A0A}.Release|x64.Build.0 = Release|Any CPU
 		{D0DA2B8F-A8D2-4514-B261-4D824D402A0A}.Release|x86.ActiveCfg = Release|Any CPU
 		{D0DA2B8F-A8D2-4514-B261-4D824D402A0A}.Release|x86.Build.0 = Release|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Debug|x64.Build.0 = Debug|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Debug|x86.Build.0 = Debug|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Release|x64.ActiveCfg = Release|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Release|x64.Build.0 = Release|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Release|x86.ActiveCfg = Release|Any CPU
+		{74C19A25-3364-47D8-B711-592D90D21D10}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -159,5 +173,6 @@ Global
 		{B5E8B06C-799A-49EA-A4E8-C8DB7D3B48FF} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{67E07156-3B52-423E-BF3B-8B0215A72481} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{D0DA2B8F-A8D2-4514-B261-4D824D402A0A} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
+		{74C19A25-3364-47D8-B711-592D90D21D10} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 	EndGlobalSection
 EndGlobal
