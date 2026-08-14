@@ -13,6 +13,7 @@ examples/
     csharp/
     fsharp/
   MultipleObjectives/
+    csharp/
     fsharp/
   OneMaxProblem/
     csharp/
@@ -71,7 +72,19 @@ dotnet run --project examples/Knapsack/csharp
 
 ### MultipleObjectives
 
-A placeholder for multi-objective optimization examples. At the moment, this folder contains only the `fsharp` subfolder and does not yet include a runnable example project.
+A weighted ROI/risk optimization example. The current implementation combines both values into one fitness score; it is not yet Pareto optimization.
+
+Run the F# version:
+
+```powershell
+dotnet run --project examples/MultipleObjectives/fsharp
+```
+
+Run the C# version:
+
+```powershell
+dotnet run --project examples/MultipleObjectives/csharp
+```
 
 ## Notes
 
