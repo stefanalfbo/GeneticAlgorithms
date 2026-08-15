@@ -11,7 +11,7 @@ The repository is structured as an educational, easy-to-read implementation rath
 
 ## Inspiration
 
-This library is heavily influenced by the ideas and teaching approach in *Genetic Algorithms in Elixir: Solve Problems Using Evolution* by Sean Moriarity. If you want a practical introduction to evolutionary algorithms and how to structure them in code, it is a strong companion resource for this repository.
+This library is heavily influenced by the ideas and teaching approach in [Genetic Algorithms in Elixir: Solve Problems Using Evolution](https://pragprog.com/titles/smgaelixir/genetic-algorithms-in-elixir/) by Sean Moriarity. If you want a practical introduction to evolutionary algorithms and how to structure them in code, it is a strong companion resource for this repository.
 
 ## Features
 
