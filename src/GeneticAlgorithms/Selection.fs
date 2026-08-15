@@ -32,11 +32,20 @@ module Selection =
                     population.[population.Length - 1]
                 else
                     let c = population.[i]
-                    if c.fitness + sum > u then c else loop (sum + c.fitness) (i + 1)
+
+                    if c.fitness + sum > u then
+                        c
+                    else
+                        loop (sum + c.fitness) (i + 1)
 
             loop 0.0 0
 
         Array.init n (fun _ -> pick ())
+
+    // TODO: Implement other selection methods:
+    // - Boltzmann selection: selection according to a “temperature” function.
+    // - Stochastic universal sampling: selection at evenly spaced intervals.
+    // - Rank selection: selection based on “rank” in the population.
 
     let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
         let n = int (System.Math.Round(float population.Length * opts.selection_rate))
