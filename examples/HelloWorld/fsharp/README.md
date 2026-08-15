@@ -14,11 +14,11 @@ helloworld
 
 Each chromosome is a fixed-length array of lowercase characters from `a` to `z`.
 
-The fitness function compares a candidate string with the target using Jaro similarity, where:
+The fitness function compares a candidate string with the target position by position, where:
 
 ```text
-1.0 = exact match
-0.0 = no similarity
+1.0 = every character matches
+0.0 = no characters match
 ```
 
 ## Purpose

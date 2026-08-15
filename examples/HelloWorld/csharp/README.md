@@ -14,11 +14,11 @@ helloworld
 
 Each chromosome is a fixed-length array of lowercase characters from `a` to `z`.
 
-The fitness function compares a candidate string with the target using Jaro similarity, where:
+The fitness function compares a candidate string with the target position by position, where:
 
 ```text
-1.0 = exact match
-0.0 = no similarity
+1.0 = every character matches
+0.0 = no characters match
 ```
 
 ## Purpose
@@ -28,12 +28,11 @@ This example mirrors the F# HelloWorld version, but uses the C# facade provided 
 ## How It Works
 
 1. Generate an initial population of random lowercase character strings.
-2. Convert each chromosome to a string.
-3. Compare each candidate with the target using Jaro similarity.
-4. Select parents from the population.
-5. Create offspring through crossover.
-6. Apply mutation.
-7. Continue until a chromosome exceeds the fitness threshold.
+2. Compare each candidate with the target position by position.
+3. Select parents from the population.
+4. Create offspring through crossover.
+5. Apply mutation.
+6. Continue until a chromosome matches the target exactly.
 
 In this example, the termination callback receives the current population, generation, and temperature, but only the population is used because the fitness threshold is sufficient.
 
