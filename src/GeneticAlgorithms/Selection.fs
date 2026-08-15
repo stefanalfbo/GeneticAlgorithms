@@ -21,6 +21,23 @@ module Selection =
 
         selected |> Seq.toArray
 
+    let roulette (population: Chromosome<'Gene> array) (n: int) =
+        let sumFitness = population |> Array.sumBy (fun c -> c.fitness)
+
+        let pick () =
+            let u = System.Random.Shared.NextDouble() * sumFitness
+
+            let rec loop sum i =
+                if i >= population.Length - 1 then
+                    population.[population.Length - 1]
+                else
+                    let c = population.[i]
+                    if c.fitness + sum > u then c else loop (sum + c.fitness) (i + 1)
+
+            loop 0.0 0
+
+        Array.init n (fun _ -> pick ())
+
     let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
         let n = int (System.Math.Round(float population.Length * opts.selection_rate))
         let n = if n % 2 = 0 then n else n + 1
