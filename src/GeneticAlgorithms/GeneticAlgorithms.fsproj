@@ -3,6 +3,15 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <PackageId>GeneticAlgorithms</PackageId>
+    <Authors>Stefan Alfbo</Authors>
+    <Description>A small F# library for experimenting with genetic algorithms, providing a compact, generic execution pipeline for evolving chromosomes. Usable from both F# and C#.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/stefanalfbo/GeneticAlgorithms</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/stefanalfbo/GeneticAlgorithms</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>genetic-algorithm;evolutionary-algorithm;optimization</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,6 +21,10 @@
     <Compile Include="Selection.fs" />
     <Compile Include="Genetic.fs" />
     <Compile Include="Interop.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>
