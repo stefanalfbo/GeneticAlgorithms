@@ -9,6 +9,7 @@
     <Compile Include="Chromosome.fs" />
     <Compile Include="Problem.fs" />
     <Compile Include="Genetic.fs" />
+    <Compile Include="Selection.fs" />
     <Compile Include="Interop.fs" />
   </ItemGroup>
 

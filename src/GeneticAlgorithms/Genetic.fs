@@ -1,13 +1,16 @@
 ﻿namespace GeneticAlgorithms
 
-type Options =
-    { population_size: int }
+type Options<'Gene> =
+    { population_size: int
+      selection_rate: float
+      selection_fn: Chromosome<'Gene> array -> int -> Chromosome<'Gene> array }
 
     member this.PopulationSize = this.population_size
+    member this.SelectionRate = this.selection_rate
 
 module Genetic =
 
-    let evaluate (population: Chromosome<'Gene> array) (fitnessFunction: Chromosome<'Gene> -> float) (_opts: Options) =
+    let evaluate (population: Chromosome<'Gene> array) (fitnessFunction: Chromosome<'Gene> -> float) (_opts: Options<'Gene>) =
         population
         |> Array.map (fun chromosome ->
             { chromosome with
@@ -15,7 +18,7 @@ module Genetic =
                 age = chromosome.age + 1 })
         |> Array.sortByDescending (fun chromosome -> chromosome.fitness)
 
-    let select (_opts: Options) population =
+    let select (_opts: Options<'Gene>) population =
         population
         |> Array.chunkBySize 2
         |> Array.map (fun chunk ->
@@ -24,7 +27,7 @@ module Genetic =
             | [| a |] -> a, a
             | _ -> failwith "Invalid chunk")
 
-    let crossover (opts: Options) (population: (Chromosome<'Gene> * Chromosome<'Gene>) array) =
+    let crossover (opts: Options<'Gene>) (population: (Chromosome<'Gene> * Chromosome<'Gene>) array) =
         population
         |> Array.collect (fun (p1, p2) ->
             let cxPoint = System.Random.Shared.Next(1, p1.genes.Length)
@@ -38,7 +41,7 @@ module Genetic =
             [| { p1 with genes = Array.append h1 t2 }
                { p2 with genes = Array.append h2 t1 } |])
 
-    let mutation (opts: Options) (population: Chromosome<'Gene> array) =
+    let mutation (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
         let shuffle xs =
             xs |> Array.sortBy (fun _ -> System.Random.Shared.Next())
 
@@ -51,7 +54,7 @@ module Genetic =
                 chromosome)
 
     let rec evolve
-        (opts: Options)
+        (opts: Options<'Gene>)
         (problem: Problem<'Gene>)
         (generation: int)
         (last_max_fitness: float)
@@ -74,10 +77,10 @@ module Genetic =
             |> mutation opts
             |> evolve opts problem (generation + 1) best.fitness new_temperature
 
-    let initialize genotype (opts: Options) =
+    let initialize genotype (opts: Options<'Gene>) =
         Array.init opts.population_size (fun _ -> genotype ())
 
-    let run (problem: Problem<'Gene>) (opts: Options) =
+    let run (problem: Problem<'Gene>) (opts: Options<'Gene>) =
         let population = initialize problem.genotype opts
         let first_generation = 0
         let temperature = 0

@@ -9,7 +9,7 @@ let private makeChromosome genes : Chromosome<int> =
       fitness = 0.0
       age = 0 }
 
-let private opts = { population_size = 4 }
+let private opts : Options<int> = { population_size = 4; selection_rate = 0.8; selection_fn = Selection.elite }
 
 [<Tests>]
 let evaluateTests =
@@ -144,7 +144,7 @@ let initializeTests =
                   counter <- counter + 1
                   makeChromosome [| counter |]
 
-              let result = Genetic.initialize genotype { population_size = 5 }
+              let result = Genetic.initialize genotype { population_size = 5; selection_rate = 0.8; selection_fn = Selection.elite }
 
               Expect.equal result.Length 5 "should create population_size chromosomes"
 
@@ -171,7 +171,7 @@ let runTests =
                     fitness_function = fun c -> float c.genes.[0]
                     terminate = fun _ _ _ -> true }
 
-              let result = Genetic.run problem { population_size = genes.Length }
+              let result = Genetic.run problem { population_size = genes.Length; selection_rate = 0.8; selection_fn = Selection.elite }
 
               Expect.equal result.genes.[0] 9 "should return the chromosome with the highest fitness"
 
@@ -189,7 +189,7 @@ let runTests =
                           observedGenerations.Add generation
                           generation >= 2 }
 
-              Genetic.run problem { population_size = 4 } |> ignore
+              Genetic.run problem { population_size = 4; selection_rate = 0.8; selection_fn = Selection.elite } |> ignore
 
               Expect.sequenceEqual
                   observedGenerations
@@ -210,7 +210,7 @@ let runTests =
                           observedTemperatures.Add temperature
                           generation >= 2 }
 
-              Genetic.run problem { population_size = 4 } |> ignore
+              Genetic.run problem { population_size = 4; selection_rate = 0.8; selection_fn = Selection.elite } |> ignore
 
               let roundedTemperatures =
                   observedTemperatures

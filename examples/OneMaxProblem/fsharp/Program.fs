@@ -20,7 +20,7 @@ let problem: Problem<int> =
       fitness_function = fitness_function
       terminate = terminate }
 
-let options = { population_size = 100 }
+let options = { population_size = 100; selection_rate = 0.8; selection_fn = Selection.elite }
 
 let solution = Genetic.run problem options
 

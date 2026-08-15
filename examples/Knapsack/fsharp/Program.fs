@@ -36,7 +36,7 @@ let problem: Problem<int> =
       fitness_function = fitness_function
       terminate = terminate }
 
-let options = { population_size = 50 }
+let options = { population_size = 50; selection_rate = 0.8; selection_fn = Selection.elite }
 let solution = Genetic.run problem options
 
 printfn "Best solution: %A (fitness: %f)" solution.genes solution.fitness

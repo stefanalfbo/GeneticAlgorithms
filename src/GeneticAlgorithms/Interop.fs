@@ -14,7 +14,7 @@ type GeneticAlgorithm =
           fitness = 0.0
           age = 0 }
 
-    static member CreateOptions(populationSize: int) : Options = { population_size = populationSize }
+    static member CreateOptions<'Gene>(populationSize: int) : Options<'Gene> = { population_size = populationSize; selection_rate = 0.8; selection_fn = Selection.elite }
 
     static member CreateProblem<'Gene>
         (
@@ -52,7 +52,7 @@ type GeneticAlgorithm =
             genotype: Func<Chromosome<'Gene>>,
             fitnessFunction: Func<Chromosome<'Gene>, float>,
             terminate: Func<IEnumerable<Chromosome<'Gene>>, int, float, bool>,
-            options: Options
+            options: Options<'Gene>
         ) : Chromosome<'Gene> =
         if isNull (box options) then
             nullArg "options"
@@ -65,9 +65,9 @@ type GeneticAlgorithm =
         if isNull (box problem) then
             nullArg "problem"
 
-        Genetic.run problem { population_size = populationSize }
+        Genetic.run problem { population_size = populationSize; selection_rate = 0.8; selection_fn = Selection.elite }
 
-    static member Run<'Gene>(problem: Problem<'Gene>, options: Options) : Chromosome<'Gene> =
+    static member Run<'Gene>(problem: Problem<'Gene>, options: Options<'Gene>) : Chromosome<'Gene> =
         if isNull (box problem) then
             nullArg "problem"
 
@@ -81,7 +81,7 @@ type Interop =
     static member CreateChromosome<'Gene>(genes: 'Gene array) : Chromosome<'Gene> =
         GeneticAlgorithm.CreateChromosome genes
 
-    static member CreateOptions(populationSize: int) : Options =
+    static member CreateOptions<'Gene>(populationSize: int) : Options<'Gene> =
         GeneticAlgorithm.CreateOptions populationSize
 
     static member CreateProblem<'Gene>
@@ -106,12 +106,12 @@ type Interop =
             genotype: Func<Chromosome<'Gene>>,
             fitnessFunction: Func<Chromosome<'Gene>, float>,
             terminate: Func<IEnumerable<Chromosome<'Gene>>, int, float, bool>,
-            options: Options
+            options: Options<'Gene>
         ) : Chromosome<'Gene> =
         GeneticAlgorithm.Run(genotype, fitnessFunction, terminate, options)
 
     static member Run<'Gene>(problem: Problem<'Gene>, populationSize: int) : Chromosome<'Gene> =
         GeneticAlgorithm.Run(problem, populationSize)
 
-    static member Run<'Gene>(problem: Problem<'Gene>, options: Options) : Chromosome<'Gene> =
+    static member Run<'Gene>(problem: Problem<'Gene>, options: Options<'Gene>) : Chromosome<'Gene> =
         GeneticAlgorithm.Run(problem, options)
