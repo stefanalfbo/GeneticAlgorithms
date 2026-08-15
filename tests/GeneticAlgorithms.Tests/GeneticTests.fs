@@ -44,34 +44,6 @@ let evaluateTests =
               Expect.equal (result |> Array.map (fun c -> c.genes.[0])) [| 3; 2; 1 |] "should be sorted descending" ]
 
 [<Tests>]
-let selectTests =
-    testList
-        "Genetic.select"
-        [ testCase "pairs up an even population"
-          <| fun _ ->
-              let population =
-                  [| makeChromosome [| 1 |]
-                     makeChromosome [| 2 |]
-                     makeChromosome [| 3 |]
-                     makeChromosome [| 4 |] |]
-
-              let result = Genetic.select opts population
-
-              Expect.equal result.Length 2 "should produce population.Length / 2 pairs"
-              Expect.equal result.[0] (population.[0], population.[1]) "first pair should be the first two chromosomes"
-              Expect.equal result.[1] (population.[2], population.[3]) "second pair should be the last two chromosomes"
-
-          testCase "pairs the leftover chromosome with itself for an odd population"
-          <| fun _ ->
-              let population =
-                  [| makeChromosome [| 1 |]; makeChromosome [| 2 |]; makeChromosome [| 3 |] |]
-
-              let result = Genetic.select opts population
-
-              Expect.equal result.Length 2 "should produce two pairs"
-              Expect.equal result.[1] (population.[2], population.[2]) "the leftover chromosome should pair with itself" ]
-
-[<Tests>]
 let crossoverTests =
     testList
         "Genetic.crossover"

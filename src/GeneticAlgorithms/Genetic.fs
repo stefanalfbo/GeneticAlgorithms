@@ -10,15 +10,6 @@ module Genetic =
                 age = chromosome.age + 1 })
         |> Array.sortByDescending (fun chromosome -> chromosome.fitness)
 
-    let select (_opts: Options<'Gene>) population =
-        population
-        |> Array.chunkBySize 2
-        |> Array.map (fun chunk ->
-            match chunk with
-            | [| a; b |] -> a, b
-            | [| a |] -> a, a
-            | _ -> failwith "Invalid chunk")
-
     let crossover (opts: Options<'Gene>) (population: (Chromosome<'Gene> * Chromosome<'Gene>) array) =
         population
         |> Array.collect (fun (p1, p2) ->
@@ -63,9 +54,10 @@ module Genetic =
         if problem.terminate next_population generation new_temperature then
             best
         else
-            next_population
-            |> select opts
-            |> crossover opts
+            let parents, leftover = Selection.select opts next_population
+            let children = crossover opts parents
+
+            Array.append children leftover
             |> mutation opts
             |> evolve opts problem (generation + 1) best.fitness new_temperature
 

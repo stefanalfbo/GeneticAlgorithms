@@ -35,7 +35,7 @@ type GeneticAlgorithm =
           fitness_function = fun chromosome -> fitnessFunction.Invoke chromosome
           terminate = fun population generation temperature -> terminate.Invoke(population, generation, temperature) }
 
-    static member Run<'Gene>
+    static member Run<'Gene when 'Gene: equality>
         (
             genotype: Func<Chromosome<'Gene>>,
             fitnessFunction: Func<Chromosome<'Gene>, float>,
@@ -47,7 +47,7 @@ type GeneticAlgorithm =
 
         Genetic.run problem options
 
-    static member Run<'Gene>
+    static member Run<'Gene when 'Gene: equality>
         (
             genotype: Func<Chromosome<'Gene>>,
             fitnessFunction: Func<Chromosome<'Gene>, float>,
@@ -61,13 +61,13 @@ type GeneticAlgorithm =
 
         Genetic.run problem options
 
-    static member Run<'Gene>(problem: Problem<'Gene>, populationSize: int) : Chromosome<'Gene> =
+    static member Run<'Gene when 'Gene: equality>(problem: Problem<'Gene>, populationSize: int) : Chromosome<'Gene> =
         if isNull (box problem) then
             nullArg "problem"
 
         Genetic.run problem { population_size = populationSize; selection_rate = 0.8; selection_fn = Selection.elite }
 
-    static member Run<'Gene>(problem: Problem<'Gene>, options: Options<'Gene>) : Chromosome<'Gene> =
+    static member Run<'Gene when 'Gene: equality>(problem: Problem<'Gene>, options: Options<'Gene>) : Chromosome<'Gene> =
         if isNull (box problem) then
             nullArg "problem"
 
@@ -92,7 +92,7 @@ type Interop =
         ) : Problem<'Gene> =
         GeneticAlgorithm.CreateProblem(genotype, fitnessFunction, terminate)
 
-    static member Run<'Gene>
+    static member Run<'Gene when 'Gene: equality>
         (
             genotype: Func<Chromosome<'Gene>>,
             fitnessFunction: Func<Chromosome<'Gene>, float>,
@@ -101,7 +101,7 @@ type Interop =
         ) : Chromosome<'Gene> =
         GeneticAlgorithm.Run(genotype, fitnessFunction, terminate, populationSize)
 
-    static member Run<'Gene>
+    static member Run<'Gene when 'Gene: equality>
         (
             genotype: Func<Chromosome<'Gene>>,
             fitnessFunction: Func<Chromosome<'Gene>, float>,
@@ -110,8 +110,8 @@ type Interop =
         ) : Chromosome<'Gene> =
         GeneticAlgorithm.Run(genotype, fitnessFunction, terminate, options)
 
-    static member Run<'Gene>(problem: Problem<'Gene>, populationSize: int) : Chromosome<'Gene> =
+    static member Run<'Gene when 'Gene: equality>(problem: Problem<'Gene>, populationSize: int) : Chromosome<'Gene> =
         GeneticAlgorithm.Run(problem, populationSize)
 
-    static member Run<'Gene>(problem: Problem<'Gene>, options: Options<'Gene>) : Chromosome<'Gene> =
+    static member Run<'Gene when 'Gene: equality>(problem: Problem<'Gene>, options: Options<'Gene>) : Chromosome<'Gene> =
         GeneticAlgorithm.Run(problem, options)
