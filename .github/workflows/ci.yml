@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
@@ -28,5 +30,21 @@ jobs:
       - name: Build solution
         run: dotnet build genetic-algorithms.sln --configuration Release --no-restore
 
-      - name: Run tests
-        run: dotnet run --project tests/GeneticAlgorithms.Tests/GeneticAlgorithms.Tests.fsproj --configuration Release --no-build
+      - name: Install coverage tool
+        run: dotnet tool install --global dotnet-coverage
+
+      - name: Run tests with coverage
+        run: >
+          dotnet-coverage collect
+          --output coverage.cobertura.xml
+          --output-format cobertura
+          --include-files "src/GeneticAlgorithms/bin/Release/net9.0/GeneticAlgorithms.dll"
+          dotnet run --project tests/GeneticAlgorithms.Tests/GeneticAlgorithms.Tests.fsproj
+          --configuration Release --no-build
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.cobertura.xml
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
