@@ -21,29 +21,43 @@ module Selection =
 
         selected |> Seq.toArray
 
-    let roulette (population: Chromosome<'Gene> array) (n: int) =
-        let sumFitness = population |> Array.sumBy (fun c -> c.Fitness)
+    let private pickWeighted (population: Chromosome<'Gene> array) (weights: float array) =
+        let totalWeight = Array.sum weights
+        let u = System.Random.Shared.NextDouble() * totalWeight
 
-        let pick () =
-            let u = System.Random.Shared.NextDouble() * sumFitness
+        let rec loop sum i =
+            if i >= population.Length - 1 then
+                population.[population.Length - 1]
+            else
+                let w = weights.[i]
 
-            let rec loop sum i =
-                if i >= population.Length - 1 then
-                    population.[population.Length - 1]
+                if w + sum > u then
+                    population.[i]
                 else
-                    let c = population.[i]
+                    loop (sum + w) (i + 1)
 
-                    if c.Fitness + sum > u then
-                        c
-                    else
-                        loop (sum + c.Fitness) (i + 1)
+        loop 0.0 0
 
-            loop 0.0 0
+    let roulette (population: Chromosome<'Gene> array) (n: int) =
+        let weights = population |> Array.map (fun c -> c.Fitness)
+        Array.init n (fun _ -> pickWeighted population weights)
 
-        Array.init n (fun _ -> pick ())
+    let boltzmann (temperature: float) (population: Chromosome<'Gene> array) (n: int) =
+        if temperature <= 0.0 then
+            invalidArg "temperature" "Temperature must be positive."
+
+        // Subtract the max fitness before exponentiating so every exponent is <= 0.
+        // This keeps exp(...) within (0, 1] regardless of fitness/temperature magnitude,
+        // avoiding an overflow to Infinity, while leaving the selection probabilities
+        // identical to the unshifted computation.
+        let maxFitness = population |> Array.map (fun c -> c.Fitness) |> Array.max
+
+        let weights =
+            population |> Array.map (fun c -> exp ((c.Fitness - maxFitness) / temperature))
+
+        Array.init n (fun _ -> pickWeighted population weights)
 
     // TODO: Implement other selection methods:
-    // - Boltzmann selection: selection according to a “temperature” function.
     // - Stochastic universal sampling: selection at evenly spaced intervals.
     // - Rank selection: selection based on “rank” in the population.
 

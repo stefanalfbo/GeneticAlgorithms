@@ -99,6 +99,38 @@ let rouletteTests =
               Expect.all result (fun c -> c = weighted.[0]) "should always pick the chromosome with all the fitness" ]
 
 [<Tests>]
+let boltzmannTests =
+    testList
+        "Selection.boltzmann"
+        [ testCase "returns n chromosomes"
+          <| fun _ ->
+              let result = Selection.boltzmann 1.0 population 3
+
+              Expect.equal result.Length 3 "should return exactly n chromosomes"
+
+          testCase "raises for a non-positive temperature"
+          <| fun _ ->
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Selection.boltzmann 0.0 population 1 |> ignore)
+                  "temperature must be positive"
+
+          testCase "strongly favors the fittest chromosome at a low temperature"
+          <| fun _ ->
+              let weighted = [| makeChromosome 10.0; makeChromosome 0.0 |]
+
+              let result = Selection.boltzmann 0.1 weighted 5
+
+              Expect.all result (fun c -> c = weighted.[0]) "should almost always pick the fittest chromosome"
+
+          testCase "does not overflow for a large fitness gap at a very low temperature"
+          <| fun _ ->
+              let weighted = [| makeChromosome 1_000_000.0; makeChromosome 0.0 |]
+
+              let result = Selection.boltzmann 0.001 weighted 5
+
+              Expect.all result (fun c -> c = weighted.[0]) "should deterministically pick the fittest chromosome without producing NaN or Infinity weights" ]
+
+[<Tests>]
 let selectTests =
     testList
         "Selection.select"
