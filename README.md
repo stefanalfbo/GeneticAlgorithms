@@ -4,7 +4,7 @@
 [![NuGet](https://img.shields.io/nuget/v/GeneticAlgorithms.svg)](https://www.nuget.org/packages/GeneticAlgorithms)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-![Genetic Algorithms logo](assets/logo.svg)
+![Genetic Algorithms logo](https://raw.githubusercontent.com/stefanalfbo/GeneticAlgorithms/main/assets/logo.svg)
 
 `GeneticAlgorithms` is a small F# library for experimenting with genetic algorithms. It provides a compact, generic execution pipeline for evolving chromosomes and includes example projects that demonstrate both binary and character-based optimization problems.
 
