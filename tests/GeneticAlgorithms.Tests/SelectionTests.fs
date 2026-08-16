@@ -169,6 +169,42 @@ let stochasticUniversalSamplingTests =
               Expect.equal (countOf weighted.[3]) 1 "the chromosome with 1/10 of the fitness should be picked exactly 1 time" ]
 
 [<Tests>]
+let rankTests =
+    testList
+        "Selection.rank"
+        [ testCase "returns n chromosomes"
+          <| fun _ ->
+              let result = Selection.rank population 3
+
+              Expect.equal result.Length 3 "should return exactly n chromosomes"
+
+          testCase "returns the only chromosome when the population has a single member"
+          <| fun _ ->
+              let single = [| makeChromosome 1.0 |]
+
+              let result = Selection.rank single 3
+
+              Expect.all result (fun c -> c = single.[0]) "should always return the only chromosome"
+
+          testCase "weighs by rank rather than raw fitness, so an extreme outlier does not dominate"
+          <| fun _ ->
+              // Ranks here are 1/2/3 (worst to best) regardless of the fitness gap, so the
+              // best chromosome has only half the total weight instead of ~all of it, and the
+              // worst still has a real (1/6) chance. Over 200 draws the odds of either of the
+              // following failing by chance are astronomically small (~(5/6)^200 and ~0.5^200).
+              let weighted = [| makeChromosome 1000.0; makeChromosome 2.0; makeChromosome 1.0 |]
+
+              let result = Selection.rank weighted 200
+
+              Expect.isTrue
+                  (result |> Array.exists ((=) weighted.[2]))
+                  "the lowest-fitness chromosome should still be picked sometimes"
+
+              Expect.isTrue
+                  (result |> Array.exists (fun c -> c <> weighted.[0]))
+                  "the extreme fitness outlier should not win every single pick" ]
+
+[<Tests>]
 let selectTests =
     testList
         "Selection.select"

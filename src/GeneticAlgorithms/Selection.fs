@@ -78,8 +78,13 @@ module Selection =
 
         selected.ToArray()
 
-    // TODO: Implement other selection methods:
-    // - Rank selection: selection based on “rank” in the population.
+    let rank (population: Chromosome<'Gene> array) (n: int) =
+        // Weight by position in fitness order (1 for the worst, N for the best) rather
+        // than by raw fitness value, so a single extreme fitness outlier can't dominate
+        // selection the way it would with fitness-proportionate methods like roulette.
+        let ranked = population |> Array.sortBy (fun c -> c.Fitness)
+        let weights = Array.init ranked.Length (fun i -> float (i + 1))
+        Array.init n (fun _ -> pickWeighted ranked weights)
 
     let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
         let n = int (System.Math.Round(float population.Length * opts.SelectionRate))
