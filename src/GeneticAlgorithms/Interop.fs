@@ -9,12 +9,16 @@ type GeneticAlgorithm =
         if isNull genes then
             nullArg "genes"
 
-        { genes = Array.copy genes
-          size = genes.Length
-          fitness = 0.0
-          age = 0 }
+        { Genes = Array.copy genes
+          Fitness = 0.0
+          Age = 0 }
 
-    static member CreateOptions<'Gene>(populationSize: int) : Options<'Gene> = { population_size = populationSize; selection_rate = 0.8; selection_fn = Selection.elite }
+    static member CreateOptions<'Gene>(populationSize: int) : Options<'Gene> =
+        { PopulationSize = populationSize
+          SelectionRate = 0.8
+          SelectionFn = Selection.elite
+          MutationRate = 0.05
+          OnGeneration = Genetic.printProgress }
 
     static member CreateProblem<'Gene>
         (
@@ -31,9 +35,9 @@ type GeneticAlgorithm =
         if isNull terminate then
             nullArg "terminate"
 
-        { genotype = fun () -> genotype.Invoke()
-          fitness_function = fun chromosome -> fitnessFunction.Invoke chromosome
-          terminate = fun population generation temperature -> terminate.Invoke(population, generation, temperature) }
+        { Genotype = fun () -> genotype.Invoke()
+          FitnessFunction = fun chromosome -> fitnessFunction.Invoke chromosome
+          Terminate = fun population generation temperature -> terminate.Invoke(population, generation, temperature) }
 
     static member Run<'Gene when 'Gene: equality>
         (
@@ -65,7 +69,7 @@ type GeneticAlgorithm =
         if isNull (box problem) then
             nullArg "problem"
 
-        Genetic.run problem { population_size = populationSize; selection_rate = 0.8; selection_fn = Selection.elite }
+        Genetic.run problem (GeneticAlgorithm.CreateOptions populationSize)
 
     static member Run<'Gene when 'Gene: equality>(problem: Problem<'Gene>, options: Options<'Gene>) : Chromosome<'Gene> =
         if isNull (box problem) then

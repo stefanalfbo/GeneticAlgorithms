@@ -1,28 +1,31 @@
-﻿namespace GeneticAlgorithms
+namespace GeneticAlgorithms
 
 module Genetic =
 
-    let evaluate (population: Chromosome<'Gene> array) (fitnessFunction: Chromosome<'Gene> -> float) (_opts: Options<'Gene>) =
+    let printProgress (chromosome: Chromosome<'Gene>) (_generation: int) =
+        printfn "Current Best %f" chromosome.Fitness
+
+    let evaluate (population: Chromosome<'Gene> array) (fitnessFunction: Chromosome<'Gene> -> float) =
         population
         |> Array.map (fun chromosome ->
             { chromosome with
-                fitness = fitnessFunction chromosome
-                age = chromosome.age + 1 })
-        |> Array.sortByDescending (fun chromosome -> chromosome.fitness)
+                Fitness = fitnessFunction chromosome
+                Age = chromosome.Age + 1 })
+        |> Array.sortByDescending (fun chromosome -> chromosome.Fitness)
 
-    let crossover (opts: Options<'Gene>) (population: (Chromosome<'Gene> * Chromosome<'Gene>) array) =
+    let crossover (population: (Chromosome<'Gene> * Chromosome<'Gene>) array) =
         population
         |> Array.collect (fun (p1, p2) ->
-            let cxPoint = System.Random.Shared.Next(1, p1.genes.Length)
+            let crossoverPoint = System.Random.Shared.Next(1, p1.Genes.Length)
 
-            let h1 = p1.genes |> Array.take cxPoint
-            let t1 = p1.genes |> Array.skip cxPoint
+            let parent1Head = p1.Genes |> Array.take crossoverPoint
+            let parent1Tail = p1.Genes |> Array.skip crossoverPoint
 
-            let h2 = p2.genes |> Array.take cxPoint
-            let t2 = p2.genes |> Array.skip cxPoint
+            let parent2Head = p2.Genes |> Array.take crossoverPoint
+            let parent2Tail = p2.Genes |> Array.skip crossoverPoint
 
-            [| { p1 with genes = Array.append h1 t2 }
-               { p2 with genes = Array.append h2 t1 } |])
+            [| { p1 with Genes = Array.append parent1Head parent2Tail }
+               { p2 with Genes = Array.append parent2Head parent1Tail } |])
 
     let mutation (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
         let shuffle xs =
@@ -30,9 +33,9 @@ module Genetic =
 
         population
         |> Array.map (fun chromosome ->
-            if System.Random.Shared.NextDouble() < 0.05 then
+            if System.Random.Shared.NextDouble() < opts.MutationRate then
                 { chromosome with
-                    genes = shuffle chromosome.genes }
+                    Genes = shuffle chromosome.Genes }
             else
                 chromosome)
 
@@ -40,34 +43,34 @@ module Genetic =
         (opts: Options<'Gene>)
         (problem: Problem<'Gene>)
         (generation: int)
-        (last_max_fitness: float)
+        (lastMaxFitness: float)
         (temperature: float)
         (population: Chromosome<'Gene> array)
         =
-        let next_population = evaluate population problem.fitness_function opts
+        let nextPopulation = evaluate population problem.FitnessFunction
 
-        let best = next_population.[0]
-        let new_temperature = 0.8 * (temperature + (best.fitness - last_max_fitness))
+        let best = nextPopulation.[0]
+        let newTemperature = 0.8 * (temperature + (best.Fitness - lastMaxFitness))
 
-        printfn "Current Best %f" (problem.fitness_function best)
+        opts.OnGeneration best generation
 
-        if problem.terminate next_population generation new_temperature then
+        if problem.Terminate nextPopulation generation newTemperature then
             best
         else
-            let parents, leftover = Selection.select opts next_population
-            let children = crossover opts parents
+            let parents, leftover = Selection.select opts nextPopulation
+            let children = crossover parents
 
             Array.append children leftover
             |> mutation opts
-            |> evolve opts problem (generation + 1) best.fitness new_temperature
+            |> evolve opts problem (generation + 1) best.Fitness newTemperature
 
     let initialize genotype (opts: Options<'Gene>) =
-        Array.init opts.population_size (fun _ -> genotype ())
+        Array.init opts.PopulationSize (fun _ -> genotype ())
 
     let run (problem: Problem<'Gene>) (opts: Options<'Gene>) =
-        let population = initialize problem.genotype opts
-        let first_generation = 0
-        let temperature = 0
-        let first_max_fitness = 0.0
+        let population = initialize problem.Genotype opts
+        let firstGeneration = 0
+        let temperature = 0.0
+        let firstMaxFitness = 0.0
 
-        population |> evolve opts problem first_generation first_max_fitness temperature
+        population |> evolve opts problem firstGeneration firstMaxFitness temperature

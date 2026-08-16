@@ -4,16 +4,20 @@ open Expecto
 open GeneticAlgorithms
 
 let private makeChromosome fitness : Chromosome<int> =
-    { genes = [| 0 |]
-      size = 1
-      fitness = fitness
-      age = 0 }
+    { Genes = [| 0 |]; Fitness = fitness; Age = 0 }
 
 let private population =
     [| makeChromosome 4.0
        makeChromosome 3.0
        makeChromosome 2.0
        makeChromosome 1.0 |]
+
+let private opts: Options<int> =
+    { PopulationSize = population.Length
+      SelectionRate = 0.8
+      SelectionFn = Selection.elite
+      MutationRate = 0.05
+      OnGeneration = fun _ _ -> () }
 
 [<Tests>]
 let eliteTests =
@@ -100,24 +104,14 @@ let selectTests =
         "Selection.select"
         [ testCase "splits the population into parent pairs and leftover using selection_rate"
           <| fun _ ->
-              let opts: Options<int> =
-                  { population_size = population.Length
-                    selection_rate = 0.5
-                    selection_fn = Selection.elite }
-
-              let parentPairs, leftover = Selection.select opts population
+              let parentPairs, leftover = Selection.select { opts with SelectionRate = 0.5 } population
 
               Expect.equal parentPairs.Length 1 "half the population should be paired up"
               Expect.equal leftover.Length 2 "the rest should be left over"
 
           testCase "rounds an odd selection count up to the next even number"
           <| fun _ ->
-              let opts: Options<int> =
-                  { population_size = population.Length
-                    selection_rate = 0.75
-                    selection_fn = Selection.elite }
-
-              let parentPairs, leftover = Selection.select opts population
+              let parentPairs, leftover = Selection.select { opts with SelectionRate = 0.75 } population
 
               Expect.equal parentPairs.Length 2 "the selection count should be rounded up to stay even"
               Expect.equal leftover.Length 0 "no chromosomes should be left over" ]

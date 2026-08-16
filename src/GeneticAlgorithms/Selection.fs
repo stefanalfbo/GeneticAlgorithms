@@ -9,20 +9,20 @@ module Selection =
         |> Array.sortBy (fun _ -> System.Random.Shared.Next())
         |> Array.take n
 
-    let tournament (tournament_size: int) (population: Chromosome<'Gene> array) (n: int) =
-        Array.init n (fun _ -> random population tournament_size |> Array.maxBy (fun c -> c.fitness))
+    let tournament (tournamentSize: int) (population: Chromosome<'Gene> array) (n: int) =
+        Array.init n (fun _ -> random population tournamentSize |> Array.maxBy (fun c -> c.Fitness))
 
-    let tournamentNoDuplicates (tournament_size: int) (population: Chromosome<'Gene> array) (n: int) =
+    let tournamentNoDuplicates (tournamentSize: int) (population: Chromosome<'Gene> array) (n: int) =
         let selected = System.Collections.Generic.HashSet<Chromosome<'Gene>>()
 
         while selected.Count < n do
-            let chosen = random population tournament_size |> Array.maxBy (fun c -> c.fitness)
+            let chosen = random population tournamentSize |> Array.maxBy (fun c -> c.Fitness)
             selected.Add chosen |> ignore
 
         selected |> Seq.toArray
 
     let roulette (population: Chromosome<'Gene> array) (n: int) =
-        let sumFitness = population |> Array.sumBy (fun c -> c.fitness)
+        let sumFitness = population |> Array.sumBy (fun c -> c.Fitness)
 
         let pick () =
             let u = System.Random.Shared.NextDouble() * sumFitness
@@ -33,10 +33,10 @@ module Selection =
                 else
                     let c = population.[i]
 
-                    if c.fitness + sum > u then
+                    if c.Fitness + sum > u then
                         c
                     else
-                        loop (sum + c.fitness) (i + 1)
+                        loop (sum + c.Fitness) (i + 1)
 
             loop 0.0 0
 
@@ -48,10 +48,10 @@ module Selection =
     // - Rank selection: selection based on “rank” in the population.
 
     let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
-        let n = int (System.Math.Round(float population.Length * opts.selection_rate))
+        let n = int (System.Math.Round(float population.Length * opts.SelectionRate))
         let n = if n % 2 = 0 then n else n + 1
 
-        let parents = opts.selection_fn population n
+        let parents = opts.SelectionFn population n
         let leftover = population |> Seq.except parents |> Seq.toArray
 
         let parentPairs =

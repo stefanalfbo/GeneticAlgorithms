@@ -3,13 +3,14 @@ module GeneticAlgorithms.Tests.GeneticTests
 open Expecto
 open GeneticAlgorithms
 
-let private makeChromosome genes : Chromosome<int> =
-    { genes = genes
-      size = Array.length genes
-      fitness = 0.0
-      age = 0 }
+let private makeChromosome genes : Chromosome<int> = { Genes = genes; Fitness = 0.0; Age = 0 }
 
-let private opts : Options<int> = { population_size = 4; selection_rate = 0.8; selection_fn = Selection.elite }
+let private opts: Options<int> =
+    { PopulationSize = 4
+      SelectionRate = 0.8
+      SelectionFn = Selection.elite
+      MutationRate = 0.05
+      OnGeneration = fun _ _ -> () }
 
 [<Tests>]
 let evaluateTests =
@@ -18,30 +19,30 @@ let evaluateTests =
         [ testCase "applies the fitness function to each chromosome"
           <| fun _ ->
               let population = [| makeChromosome [| 1 |]; makeChromosome [| 2 |] |]
-              let fitness (c: Chromosome<int>) = float c.genes.[0]
+              let fitness (c: Chromosome<int>) = float c.Genes.[0]
 
-              let result = Genetic.evaluate population fitness opts
+              let result = Genetic.evaluate population fitness
 
-              Expect.all result (fun c -> c.fitness = float c.genes.[0]) "fitness should match the fitness function"
+              Expect.all result (fun c -> c.Fitness = float c.Genes.[0]) "fitness should match the fitness function"
 
           testCase "increments the age of each chromosome"
           <| fun _ ->
               let population = [| makeChromosome [| 1 |] |]
 
-              let result = Genetic.evaluate population (fun _ -> 0.0) opts
+              let result = Genetic.evaluate population (fun _ -> 0.0)
 
-              Expect.equal result.[0].age 1 "age should be incremented by one"
+              Expect.equal result.[0].Age 1 "age should be incremented by one"
 
           testCase "sorts the population by descending fitness"
           <| fun _ ->
               let population =
                   [| makeChromosome [| 1 |]; makeChromosome [| 3 |]; makeChromosome [| 2 |] |]
 
-              let fitness (c: Chromosome<int>) = float c.genes.[0]
+              let fitness (c: Chromosome<int>) = float c.Genes.[0]
 
-              let result = Genetic.evaluate population fitness opts
+              let result = Genetic.evaluate population fitness
 
-              Expect.equal (result |> Array.map (fun c -> c.genes.[0])) [| 3; 2; 1 |] "should be sorted descending" ]
+              Expect.equal (result |> Array.map (fun c -> c.Genes.[0])) [| 3; 2; 1 |] "should be sorted descending" ]
 
 [<Tests>]
 let crossoverTests =
@@ -52,7 +53,7 @@ let crossoverTests =
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover opts [| (p1, p2) |]
+              let result = Genetic.crossover [| (p1, p2) |]
 
               Expect.equal result.Length 2 "should produce two children per pair of parents"
 
@@ -61,19 +62,19 @@ let crossoverTests =
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover opts [| (p1, p2) |]
+              let result = Genetic.crossover [| (p1, p2) |]
 
-              Expect.all result (fun c -> c.genes.Length = p1.genes.Length) "gene count should be preserved"
+              Expect.all result (fun c -> c.Genes.Length = p1.Genes.Length) "gene count should be preserved"
 
           testCase "children genes are recombined from both parents"
           <| fun _ ->
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover opts [| (p1, p2) |]
+              let result = Genetic.crossover [| (p1, p2) |]
 
-              let allGenes = result |> Array.collect (fun c -> c.genes) |> Set.ofArray
-              let expectedGenes = Array.append p1.genes p2.genes |> Set.ofArray
+              let allGenes = result |> Array.collect (fun c -> c.Genes) |> Set.ofArray
+              let expectedGenes = Array.append p1.Genes p2.Genes |> Set.ofArray
 
               Expect.equal allGenes expectedGenes "children should only contain genes from their parents" ]
 
@@ -97,11 +98,11 @@ let mutationTests =
               let result = Genetic.mutation opts population
 
               for c in result do
-                  Expect.equal c.genes.Length chromosome.genes.Length "gene count should be preserved"
+                  Expect.equal c.Genes.Length chromosome.Genes.Length "gene count should be preserved"
 
                   Expect.containsAll
-                      c.genes
-                      chromosome.genes
+                      c.Genes
+                      chromosome.Genes
                       "mutated genes should be a permutation of the original genes" ]
 
 [<Tests>]
@@ -116,12 +117,12 @@ let initializeTests =
                   counter <- counter + 1
                   makeChromosome [| counter |]
 
-              let result = Genetic.initialize genotype { population_size = 5; selection_rate = 0.8; selection_fn = Selection.elite }
+              let result = Genetic.initialize genotype { opts with PopulationSize = 5 }
 
               Expect.equal result.Length 5 "should create population_size chromosomes"
 
               Expect.equal
-                  (result |> Array.map (fun c -> c.genes.[0]))
+                  (result |> Array.map (fun c -> c.Genes.[0]))
                   [| 1; 2; 3; 4; 5 |]
                   "should call the genotype function for each chromosome" ]
 
@@ -139,13 +140,13 @@ let runTests =
                   makeChromosome [| genes.[index] |]
 
               let problem =
-                  { genotype = genotype
-                    fitness_function = fun c -> float c.genes.[0]
-                    terminate = fun _ _ _ -> true }
+                  { Genotype = genotype
+                    FitnessFunction = fun c -> float c.Genes.[0]
+                    Terminate = fun _ _ _ -> true }
 
-              let result = Genetic.run problem { population_size = genes.Length; selection_rate = 0.8; selection_fn = Selection.elite }
+              let result = Genetic.run problem { opts with PopulationSize = genes.Length }
 
-              Expect.equal result.genes.[0] 9 "should return the chromosome with the highest fitness"
+              Expect.equal result.Genes.[0] 9 "should return the chromosome with the highest fitness"
 
           testCase "passes the current generation to terminate"
           <| fun _ ->
@@ -154,14 +155,14 @@ let runTests =
               let genotype () = makeChromosome [| 0; 1 |]
 
               let problem =
-                  { genotype = genotype
-                    fitness_function = fun _ -> 0.0
-                    terminate =
+                  { Genotype = genotype
+                    FitnessFunction = fun _ -> 0.0
+                    Terminate =
                       fun _ generation _ ->
                           observedGenerations.Add generation
                           generation >= 2 }
 
-              Genetic.run problem { population_size = 4; selection_rate = 0.8; selection_fn = Selection.elite } |> ignore
+              Genetic.run problem opts |> ignore
 
               Expect.sequenceEqual
                   observedGenerations
@@ -175,14 +176,14 @@ let runTests =
               let genotype () = makeChromosome [| 9 |]
 
               let problem =
-                  { genotype = genotype
-                    fitness_function = fun c -> float c.genes.[0]
-                    terminate =
+                  { Genotype = genotype
+                    FitnessFunction = fun c -> float c.Genes.[0]
+                    Terminate =
                       fun _ generation temperature ->
                           observedTemperatures.Add temperature
                           generation >= 2 }
 
-              Genetic.run problem { population_size = 4; selection_rate = 0.8; selection_fn = Selection.elite } |> ignore
+              Genetic.run problem opts |> ignore
 
               let roundedTemperatures =
                   observedTemperatures

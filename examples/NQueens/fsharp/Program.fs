@@ -6,13 +6,12 @@ let max_fitness = float n
 let genotype () =
     let genes = Array.init n id |> Array.sortBy (fun _ -> System.Random.Shared.Next())
 
-    { genes = genes
-      size = genes.Length
-      fitness = 0.0
-      age = 0 }
+    { Genes = genes
+      Fitness = 0.0
+      Age = 0 }
 
 let fitness_function (chromosome: Chromosome<int>) =
-    let genes = chromosome.genes
+    let genes = chromosome.Genes
 
     let diag_clashes =
         [ for i in 0 .. n - 1 do
@@ -30,18 +29,20 @@ let fitness_function (chromosome: Chromosome<int>) =
     float (distinct_genes - diag_clashes)
 
 let terminate (population: seq<Chromosome<int>>) (_generation: int) (_temperature: float) =
-    population |> Seq.exists (fun chromosome -> chromosome.fitness >= max_fitness)
+    population |> Seq.exists (fun chromosome -> chromosome.Fitness >= max_fitness)
 
 let problem: Problem<int> =
-    { genotype = genotype
-      fitness_function = fitness_function
-      terminate = terminate }
+    { Genotype = genotype
+      FitnessFunction = fitness_function
+      Terminate = terminate }
 
 let options =
-    { population_size = 100
-      selection_rate = 0.8
-      selection_fn = Selection.elite }
+    { PopulationSize = 100
+      SelectionRate = 0.8
+      SelectionFn = Selection.elite
+      MutationRate = 0.05
+      OnGeneration = Genetic.printProgress }
 
 let solution = Genetic.run problem options
 
-printfn "Best solution: %A (fitness: %f / %f)" solution.genes solution.fitness max_fitness
+printfn "Best solution: %A (fitness: %f / %f)" solution.Genes solution.Fitness max_fitness
