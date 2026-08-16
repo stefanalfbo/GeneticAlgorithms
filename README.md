@@ -1,6 +1,7 @@
 # Genetic Algorithms
 
 [![CI](https://github.com/stefanalfbo/GeneticAlgorithms/actions/workflows/ci.yml/badge.svg)](https://github.com/stefanalfbo/GeneticAlgorithms/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/github/stefanalfbo/GeneticAlgorithms/graph/badge.svg)](https://codecov.io/github/stefanalfbo/GeneticAlgorithms)
 [![NuGet](https://img.shields.io/nuget/v/GeneticAlgorithms.svg)](https://www.nuget.org/packages/GeneticAlgorithms)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
