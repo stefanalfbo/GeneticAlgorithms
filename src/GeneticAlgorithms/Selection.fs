@@ -57,8 +57,28 @@ module Selection =
 
         Array.init n (fun _ -> pickWeighted population weights)
 
+    let stochasticUniversalSampling (population: Chromosome<'Gene> array) (n: int) =
+        let weights = population |> Array.map (fun c -> c.Fitness)
+        let totalWeight = Array.sum weights
+        let pointerDistance = totalWeight / float n
+        let start = System.Random.Shared.NextDouble() * pointerDistance
+
+        let selected = ResizeArray<Chromosome<'Gene>>(n)
+        let mutable sum = weights.[0]
+        let mutable i = 0
+
+        for j in 0 .. n - 1 do
+            let pointer = start + float j * pointerDistance
+
+            while sum <= pointer && i < population.Length - 1 do
+                i <- i + 1
+                sum <- sum + weights.[i]
+
+            selected.Add population.[i]
+
+        selected.ToArray()
+
     // TODO: Implement other selection methods:
-    // - Stochastic universal sampling: selection at evenly spaced intervals.
     // - Rank selection: selection based on “rank” in the population.
 
     let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =

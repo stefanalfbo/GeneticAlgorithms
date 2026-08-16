@@ -131,6 +131,44 @@ let boltzmannTests =
               Expect.all result (fun c -> c = weighted.[0]) "should deterministically pick the fittest chromosome without producing NaN or Infinity weights" ]
 
 [<Tests>]
+let stochasticUniversalSamplingTests =
+    testList
+        "Selection.stochasticUniversalSampling"
+        [ testCase "returns n chromosomes"
+          <| fun _ ->
+              let result = Selection.stochasticUniversalSampling population 3
+
+              Expect.equal result.Length 3 "should return exactly n chromosomes"
+
+          testCase "returns the only chromosome when the population has a single member"
+          <| fun _ ->
+              let single = [| makeChromosome 1.0 |]
+
+              let result = Selection.stochasticUniversalSampling single 3
+
+              Expect.all result (fun c -> c = single.[0]) "should always return the only chromosome"
+
+          testCase "selects each chromosome exactly as many times as its share of total fitness"
+          <| fun _ ->
+              // Evenly spaced pointers guarantee an exact count per chromosome (not just an
+              // expected value), regardless of the random starting offset: with fitnesses
+              // 4/3/2/1 (summing to 10) and n = 10, the pointer spacing is 1.0, so each
+              // chromosome's fitness share always contains exactly that many pointers.
+              let weighted =
+                  [| makeChromosome 4.0
+                     makeChromosome 3.0
+                     makeChromosome 2.0
+                     makeChromosome 1.0 |]
+
+              let result = Selection.stochasticUniversalSampling weighted 10
+              let countOf c = result |> Array.filter ((=) c) |> Array.length
+
+              Expect.equal (countOf weighted.[0]) 4 "the chromosome with 4/10 of the fitness should be picked exactly 4 times"
+              Expect.equal (countOf weighted.[1]) 3 "the chromosome with 3/10 of the fitness should be picked exactly 3 times"
+              Expect.equal (countOf weighted.[2]) 2 "the chromosome with 2/10 of the fitness should be picked exactly 2 times"
+              Expect.equal (countOf weighted.[3]) 1 "the chromosome with 1/10 of the fitness should be picked exactly 1 time" ]
+
+[<Tests>]
 let selectTests =
     testList
         "Selection.select"
