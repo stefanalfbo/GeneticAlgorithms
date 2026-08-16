@@ -15,6 +15,8 @@ examples/
   MultipleObjectives/
     csharp/
     fsharp/
+  NQueens/
+    fsharp/
   OneMaxProblem/
     csharp/
     fsharp/
@@ -84,6 +86,16 @@ Run the C# version:
 
 ```powershell
 dotnet run --project examples/MultipleObjectives/csharp
+```
+
+### NQueens
+
+A constraint satisfaction example where the goal is to place `N` queens on an `N`×`N` board so that none attack each other. Fitness counts non-attacking pairs rather than measuring a value to maximize.
+
+Run the F# version:
+
+```powershell
+dotnet run --project examples/NQueens/fsharp
 ```
 
 ## Notes
