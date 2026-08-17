@@ -38,6 +38,7 @@ jobs:
           dotnet-coverage collect
           --output coverage.cobertura.xml
           --output-format cobertura
+          --settings coverage.config.xml
           --include-files "src/GeneticAlgorithms/bin/Release/net9.0/GeneticAlgorithms.dll"
           dotnet run --project tests/GeneticAlgorithms.Tests/GeneticAlgorithms.Tests.fsproj
           --configuration Release --no-build
