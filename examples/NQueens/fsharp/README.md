@@ -45,6 +45,8 @@ This makes the example useful for demonstrating:
 
 In this example, the termination function receives the current population, the generation number, and the temperature value, but it only uses the population because reaching the maximum fitness is sufficient.
 
+Crossover uses `Crossover.orderOneCrossover` rather than the library's default single-point crossover. Because each chromosome is a permutation (every row used exactly once), a single-point cut would generally produce children with duplicate and missing rows; order-one crossover preserves the permutation instead, keeping the genotype's invariant intact across generations.
+
 ## Running the Example
 
 From the repository root:

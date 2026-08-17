@@ -9,6 +9,7 @@ let private opts: Options<int> =
     { PopulationSize = 4
       SelectionRate = 0.8
       SelectionFn = Selection.elite
+      CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       OnGeneration = fun _ _ -> () }
 
@@ -53,7 +54,7 @@ let crossoverTests =
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover [| (p1, p2) |]
+              let result = Genetic.crossover Crossover.singlePoint [| (p1, p2) |]
 
               Expect.equal result.Length 2 "should produce two children per pair of parents"
 
@@ -62,7 +63,7 @@ let crossoverTests =
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover [| (p1, p2) |]
+              let result = Genetic.crossover Crossover.singlePoint [| (p1, p2) |]
 
               Expect.all result (fun c -> c.Genes.Length = p1.Genes.Length) "gene count should be preserved"
 
@@ -71,7 +72,7 @@ let crossoverTests =
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover [| (p1, p2) |]
+              let result = Genetic.crossover Crossover.singlePoint [| (p1, p2) |]
 
               let allGenes = result |> Array.collect (fun c -> c.Genes) |> Set.ofArray
               let expectedGenes = Array.append p1.Genes p2.Genes |> Set.ofArray

@@ -27,6 +27,7 @@ let options =
     { PopulationSize = 125
       SelectionRate = 0.8
       SelectionFn = Selection.elite
+      CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       OnGeneration = Genetic.printProgress }
 

@@ -13,19 +13,14 @@ module Genetic =
                 Age = chromosome.Age + 1 })
         |> Array.sortByDescending (fun chromosome -> chromosome.Fitness)
 
-    let crossover (population: (Chromosome<'Gene> * Chromosome<'Gene>) array) =
+    let crossover
+        (crossoverFn: Chromosome<'Gene> -> Chromosome<'Gene> -> Chromosome<'Gene> * Chromosome<'Gene>)
+        (population: (Chromosome<'Gene> * Chromosome<'Gene>) array)
+        =
         population
         |> Array.collect (fun (p1, p2) ->
-            let crossoverPoint = System.Random.Shared.Next(1, p1.Genes.Length)
-
-            let parent1Head = p1.Genes |> Array.take crossoverPoint
-            let parent1Tail = p1.Genes |> Array.skip crossoverPoint
-
-            let parent2Head = p2.Genes |> Array.take crossoverPoint
-            let parent2Tail = p2.Genes |> Array.skip crossoverPoint
-
-            [| { p1 with Genes = Array.append parent1Head parent2Tail }
-               { p2 with Genes = Array.append parent2Head parent1Tail } |])
+            let c1, c2 = crossoverFn p1 p2
+            [| c1; c2 |])
 
     let mutation (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
         let shuffle xs =
@@ -58,7 +53,7 @@ module Genetic =
             best
         else
             let parents, leftover = Selection.select opts nextPopulation
-            let children = crossover parents
+            let children = crossover opts.CrossoverFn parents
 
             Array.append children leftover
             |> mutation opts

@@ -4,14 +4,48 @@ namespace GeneticAlgorithms
 /// Crossover strategies that combine two parent chromosomes into two children.
 /// </summary>
 /// <remarks>
-/// Unlike <c>Genetic.crossover</c>, which recombines chromosomes with a single-point cut
-/// and works for any gene array, the strategies here are built for permutation genotypes -
+/// Every strategy has the shape
+/// <c>Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; * Chromosome&lt;'Gene&gt;</c>
+/// (two parents in, two children out), so any of them can be plugged in as
+/// <c>Options.CrossoverFn</c>. <c>singlePoint</c> works for any gene array and is the usual
+/// default; <c>orderOneCrossover</c> is built specifically for permutation genotypes -
 /// chromosomes where every gene value must appear exactly once (for example, one queen per
 /// row in <c>NQueens</c>, or one city per visit in a routing problem). A single-point cut
-/// on a permutation would usually produce children with duplicate and missing genes, so
-/// these strategies take care to preserve the permutation instead.
+/// on a permutation would usually produce children with duplicate and missing genes, which
+/// is what <c>orderOneCrossover</c> avoids.
 /// </remarks>
 module Crossover =
+
+    /// <summary>
+    /// Combines two parents into two children by picking a single random cut point and
+    /// swapping the tails: the first child gets the first parent's head and the second
+    /// parent's tail, and the second child gets the reverse.
+    /// </summary>
+    /// <remarks>
+    /// Works for any gene array, but does not preserve permutations - if the parents are
+    /// permutations of the same values (as in <c>NQueens</c>), the children generally
+    /// won't be. Use <c>orderOneCrossover</c> for permutation genotypes instead.
+    /// </remarks>
+    /// <param name="p1">The first parent.</param>
+    /// <param name="p2">The second parent.</param>
+    /// <returns>
+    /// Two children: the first with <paramref name="p1"/>'s head and
+    /// <paramref name="p2"/>'s tail, and the second with <paramref name="p2"/>'s head and
+    /// <paramref name="p1"/>'s tail.
+    /// </returns>
+    let singlePoint (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        let crossoverPoint = System.Random.Shared.Next(1, p1.Genes.Length)
+
+        let parent1Head = p1.Genes |> Array.take crossoverPoint
+        let parent1Tail = p1.Genes |> Array.skip crossoverPoint
+
+        let parent2Head = p2.Genes |> Array.take crossoverPoint
+        let parent2Tail = p2.Genes |> Array.skip crossoverPoint
+
+        { p1 with
+            Genes = Array.append parent1Head parent2Tail },
+        { p2 with
+            Genes = Array.append parent2Head parent1Tail }
 
     /// <summary>
     /// Combines two permutation-encoded parents into two children using order-one
@@ -22,11 +56,11 @@ module Crossover =
     /// <remarks>
     /// Because each child's genes are a fixed slice of one parent plus the other parent's
     /// remaining genes with duplicates removed, both children are guaranteed to stay valid
-    /// permutations of the same gene set as the parents - unlike a single-point crossover,
-    /// which can produce a chromosome with repeated and missing genes. This makes
-    /// order-one crossover a good fit for problems like <c>NQueens</c>, where a
-    /// chromosome's genes represent a permutation (each row used exactly once) rather than
-    /// independent values.
+    /// permutations of the same gene set as the parents - unlike <c>singlePoint</c>, which
+    /// can produce a chromosome with repeated and missing genes. This makes order-one
+    /// crossover a good fit for problems like <c>NQueens</c>, where a chromosome's genes
+    /// represent a permutation (each row used exactly once) rather than independent
+    /// values.
     ///
     /// Both parents are expected to have the same, non-empty <c>Genes</c> length; this is
     /// not validated.

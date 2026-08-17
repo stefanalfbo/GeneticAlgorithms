@@ -16,6 +16,7 @@ let private opts: Options<int> =
     { PopulationSize = population.Length
       SelectionRate = 0.8
       SelectionFn = Selection.elite
+      CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       OnGeneration = fun _ _ -> () }
 
