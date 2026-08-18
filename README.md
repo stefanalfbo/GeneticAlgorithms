@@ -173,6 +173,17 @@ var solution = GeneticAlgorithm.Run(
   populationSize: 8);
 ```
 
+To use a non-default selection or crossover strategy, build `Options<'Gene>` with `GeneticAlgorithm.CreateOptions(populationSize, selectionFn, crossoverFn)` instead - the library's own `Selection`/`Crossover` module functions can be passed directly as method groups, since they compile to ordinary multi-argument static methods:
+
+```csharp
+var options = GeneticAlgorithm.CreateOptions<int>(
+  populationSize: 100,
+  selectionFn: Selection.elite,
+  crossoverFn: Crossover.orderOneCrossover);
+
+var solution = GeneticAlgorithm.Run(genotype, fitnessFunction, terminate, options);
+```
+
 The older `Interop` type remains available as a compatibility wrapper, but new C# examples should prefer `GeneticAlgorithm`.
 
 The smoke project in `tests/GeneticAlgorithms.CSharpSmoke` exists specifically to validate that this API stays straightforward to consume from C#.
