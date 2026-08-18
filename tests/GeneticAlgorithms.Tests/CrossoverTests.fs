@@ -45,3 +45,69 @@ let orderOneCrossoverTests =
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+
+[<Tests>]
+let uniformTests =
+    testList
+        "Crossover.uniform"
+        [ testCase "children have the same length as the parents"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+
+              for _ in 1..100 do
+                  let c1, c2 = Crossover.uniform 0.5 p1 p2
+
+                  Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
+                  Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
+
+          testCase "at rate 1.0, children exactly match the parents"
+          <| fun _ ->
+              // NextDouble() never returns 1.0, so "< 1.0" is always true - this is fully
+              // deterministic, not just overwhelmingly likely.
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+
+              let c1, c2 = Crossover.uniform 1.0 p1 p2
+
+              Expect.equal c1.Genes p1.Genes "first child should always take the first parent's genes"
+              Expect.equal c2.Genes p2.Genes "second child should always take the second parent's genes"
+
+          testCase "at rate 0.0, children are exactly swapped"
+          <| fun _ ->
+              // NextDouble() never returns a negative value, so "< 0.0" is always false -
+              // fully deterministic, not just overwhelmingly likely.
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+
+              let c1, c2 = Crossover.uniform 0.0 p1 p2
+
+              Expect.equal c1.Genes p2.Genes "first child should always take the second parent's genes"
+              Expect.equal c2.Genes p1.Genes "second child should always take the first parent's genes"
+
+          testCase "at every position, the two children take opposite parents' genes"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+
+              for _ in 1..100 do
+                  let c1, c2 = Crossover.uniform 0.5 p1 p2
+
+                  for i in 0 .. p1.Genes.Length - 1 do
+                      if c1.Genes.[i] = p1.Genes.[i] then
+                          Expect.equal c2.Genes.[i] p2.Genes.[i] "when the first child keeps p1's gene, the second should keep p2's"
+                      else
+                          Expect.equal c1.Genes.[i] p2.Genes.[i] "the first child's gene should come from one of the two parents"
+                          Expect.equal c2.Genes.[i] p1.Genes.[i] "when the first child takes p2's gene, the second should take p1's"
+
+          testCase "does not mutate the parent chromosomes"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+              let p1GenesBefore = Array.copy p1.Genes
+              let p2GenesBefore = Array.copy p2.Genes
+
+              Crossover.uniform 0.5 p1 p2 |> ignore
+
+              Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]

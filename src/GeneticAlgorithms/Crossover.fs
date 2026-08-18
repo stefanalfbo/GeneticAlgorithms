@@ -7,12 +7,12 @@ namespace GeneticAlgorithms
 /// Every strategy has the shape
 /// <c>Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; * Chromosome&lt;'Gene&gt;</c>
 /// (two parents in, two children out), so any of them can be plugged in as
-/// <c>Options.CrossoverFn</c>. <c>singlePoint</c> works for any gene array and is the usual
-/// default; <c>orderOneCrossover</c> is built specifically for permutation genotypes -
-/// chromosomes where every gene value must appear exactly once (for example, one queen per
-/// row in <c>NQueens</c>, or one city per visit in a routing problem). A single-point cut
-/// on a permutation would usually produce children with duplicate and missing genes, which
-/// is what <c>orderOneCrossover</c> avoids.
+/// <c>Options.CrossoverFn</c>. <c>singlePoint</c> and <c>uniform</c> work for any gene
+/// array, and <c>singlePoint</c> is the usual default; <c>orderOneCrossover</c> is built
+/// specifically for permutation genotypes - chromosomes where every gene value must appear
+/// exactly once (for example, one queen per row in <c>NQueens</c>, or one city per visit in
+/// a routing problem). A single-point cut on a permutation would usually produce children
+/// with duplicate and missing genes, which is what <c>orderOneCrossover</c> avoids.
 /// </remarks>
 module Crossover =
 
@@ -94,3 +94,36 @@ module Crossover =
             Genes = Array.concat [ head1; slice1; tail1 ] },
         { p2 with
             Genes = Array.concat [ head2; slice2; tail2 ] }
+
+    /// <summary>
+    /// Combines two parents into two children by considering each gene position
+    /// independently: with probability <paramref name="rate"/> the first child keeps the
+    /// first parent's gene at that position (and the second child keeps the second
+    /// parent's), and otherwise the two are swapped.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <c>singlePoint</c>, which swaps one contiguous tail, uniform crossover mixes
+    /// genes independently at every position. Like <c>singlePoint</c>, it does not preserve
+    /// permutations - if the parents are permutations of the same values (as in
+    /// <c>NQueens</c>), the children generally won't be. Both parents are expected to have
+    /// the same <c>Genes</c> length; this is not validated. Curry
+    /// <paramref name="rate"/> (e.g. <c>Crossover.uniform 0.5</c>) to use this as an
+    /// <c>Options.CrossoverFn</c>.
+    /// </remarks>
+    /// <param name="rate">
+    /// The probability, per gene position, that the first child keeps the first parent's
+    /// gene (and the second child keeps the second parent's) rather than swapping.
+    /// </param>
+    /// <param name="p1">The first parent.</param>
+    /// <param name="p2">The second parent.</param>
+    /// <returns>
+    /// Two children, with each gene position independently drawn from one parent or the
+    /// other.
+    /// </returns>
+    let uniform (rate: float) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        let c1, c2 =
+            Array.zip p1.Genes p2.Genes
+            |> Array.map (fun (x, y) -> if System.Random.Shared.NextDouble() < rate then x, y else y, x)
+            |> Array.unzip
+
+        { p1 with Genes = c1 }, { p2 with Genes = c2 }
