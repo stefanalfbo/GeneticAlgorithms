@@ -3,7 +3,7 @@ module GeneticAlgorithms.Tests.CrossoverTests
 open Expecto
 open GeneticAlgorithms
 
-let private makeChromosome genes : Chromosome<int> = { Genes = genes; Fitness = 0.0; Age = 0 }
+let private makeChromosome genes = { Genes = genes; Fitness = 0.0; Age = 0 }
 
 [<Tests>]
 let orderOneCrossoverTests =
@@ -108,6 +108,65 @@ let uniformTests =
               let p2GenesBefore = Array.copy p2.Genes
 
               Crossover.uniform 0.5 p1 p2 |> ignore
+
+              Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+
+[<Tests>]
+let wholeArithmeticCrossoverTests =
+    testList
+        "Crossover.wholeArithmeticCrossover"
+        [ testCase "children have the same length as the parents"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
+              let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
+
+              let c1, c2 = Crossover.wholeArithmeticCrossover 0.3 p1 p2
+
+              Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
+              Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
+
+          testCase "at alpha 1.0, children exactly match the parents"
+          <| fun _ ->
+              // This is arithmetic, not random, so this is exactly deterministic:
+              // x*1 + y*0 = x and x*0 + y*1 = y for every position.
+              let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
+              let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
+
+              let c1, c2 = Crossover.wholeArithmeticCrossover 1.0 p1 p2
+
+              Expect.equal c1.Genes p1.Genes "first child should equal the first parent"
+              Expect.equal c2.Genes p2.Genes "second child should equal the second parent"
+
+          testCase "at alpha 0.0, children are exactly swapped"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
+              let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
+
+              let c1, c2 = Crossover.wholeArithmeticCrossover 0.0 p1 p2
+
+              Expect.equal c1.Genes p2.Genes "first child should equal the second parent"
+              Expect.equal c2.Genes p1.Genes "second child should equal the first parent"
+
+          testCase "at alpha 0.5, both children are the pointwise average of the parents"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
+              let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
+              let expected = [| 5.0; 6.0; 7.0; 8.0 |]
+
+              let c1, c2 = Crossover.wholeArithmeticCrossover 0.5 p1 p2
+
+              Expect.equal c1.Genes expected "first child should be the pointwise average"
+              Expect.equal c2.Genes expected "second child should be the pointwise average"
+
+          testCase "does not mutate the parent chromosomes"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
+              let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
+              let p1GenesBefore = Array.copy p1.Genes
+              let p2GenesBefore = Array.copy p2.Genes
+
+              Crossover.wholeArithmeticCrossover 0.3 p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]

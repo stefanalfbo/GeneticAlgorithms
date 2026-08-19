@@ -13,6 +13,9 @@ namespace GeneticAlgorithms
 /// exactly once (for example, one queen per row in <c>NQueens</c>, or one city per visit in
 /// a routing problem). A single-point cut on a permutation would usually produce children
 /// with duplicate and missing genes, which is what <c>orderOneCrossover</c> avoids.
+/// <c>wholeArithmeticCrossover</c> is different again: it only works for real-valued
+/// (<c>float</c>) genotypes, since it blends parent genes arithmetically instead of
+/// swapping or copying them outright.
 /// </remarks>
 module Crossover =
 
@@ -124,6 +127,39 @@ module Crossover =
         let c1, c2 =
             Array.zip p1.Genes p2.Genes
             |> Array.map (fun (x, y) -> if System.Random.Shared.NextDouble() < rate then x, y else y, x)
+            |> Array.unzip
+
+        { p1 with Genes = c1 }, { p2 with Genes = c2 }
+
+    /// <summary>
+    /// Combines two real-valued parents into two children by blending each gene position
+    /// as a weighted average: for genes <c>x</c> (from the first parent) and <c>y</c>
+    /// (from the second), the first child gets <c>x * alpha + y * (1 - alpha)</c> and the
+    /// second gets <c>x * (1 - alpha) + y * alpha</c>.
+    /// </summary>
+    /// <remarks>
+    /// Unlike the other strategies in this module, whole arithmetic crossover only makes
+    /// sense for real-valued genotypes, so it works on <c>Chromosome&lt;float&gt;</c>
+    /// specifically rather than any <c>'Gene</c> type - it blends gene values
+    /// arithmetically rather than swapping or copying them outright. An
+    /// <paramref name="alpha"/> of 0.5 makes both children the pointwise average of the two
+    /// parents; values closer to 0 or 1 bias each child toward one parent or the other.
+    /// Both parents are expected to have the same <c>Genes</c> length; this is not
+    /// validated. Curry <paramref name="alpha"/> (e.g.
+    /// <c>Crossover.wholeArithmeticCrossover 0.5</c>) to use this as an
+    /// <c>Options&lt;float&gt;.CrossoverFn</c>.
+    /// </remarks>
+    /// <param name="alpha">The blend weight, typically in the range [0, 1].</param>
+    /// <param name="p1">The first parent.</param>
+    /// <param name="p2">The second parent.</param>
+    /// <returns>
+    /// Two children, each gene position a weighted blend of the two parents' genes at that
+    /// position.
+    /// </returns>
+    let wholeArithmeticCrossover (alpha: float) (p1: Chromosome<float>) (p2: Chromosome<float>) =
+        let c1, c2 =
+            Array.zip p1.Genes p2.Genes
+            |> Array.map (fun (x, y) -> x * alpha + y * (1.0 - alpha), x * (1.0 - alpha) + y * alpha)
             |> Array.unzip
 
         { p1 with Genes = c1 }, { p2 with Genes = c2 }
