@@ -10,9 +10,11 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/stefanalfbo/GeneticAlgorithms</PackageProjectUrl>
     <RepositoryUrl>https://github.com/stefanalfbo/GeneticAlgorithms</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>genetic-algorithm;evolutionary-algorithm;optimization</PackageTags>
     <PackageIcon>icon.png</PackageIcon>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
