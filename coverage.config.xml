@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Configuration>
-  <ModulePaths>
-    <Include>
-      <ModulePath>.*GeneticAlgorithms\.dll$</ModulePath>
-    </Include>
-  </ModulePaths>
+  <CodeCoverage>
+    <ModulePaths>
+      <Include>
+        <ModulePath>.*GeneticAlgorithms\.dll$</ModulePath>
+      </Include>
+      <Exclude>
+        <ModulePath>.*GeneticAlgorithms\.Tests\.dll$</ModulePath>
+      </Exclude>
+    </ModulePaths>
+  </CodeCoverage>
 </Configuration>
