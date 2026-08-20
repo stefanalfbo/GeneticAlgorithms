@@ -7,11 +7,12 @@ namespace GeneticAlgorithms
 /// Every strategy has the shape
 /// <c>Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; * Chromosome&lt;'Gene&gt;</c>
 /// (two parents in, two children out), so any of them can be plugged in as
-/// <c>Options.CrossoverFn</c>. <c>singlePoint</c> and <c>uniform</c> work for any gene
-/// array, and <c>singlePoint</c> is the usual default; <c>orderOneCrossover</c> is built
-/// specifically for permutation genotypes - chromosomes where every gene value must appear
-/// exactly once (for example, one queen per row in <c>NQueens</c>, or one city per visit in
-/// a routing problem). A single-point cut on a permutation would usually produce children
+/// <c>Options.CrossoverFn</c>. <c>singlePoint</c>, <c>multiPoint</c>, and <c>uniform</c>
+/// work for any gene array, and <c>singlePoint</c> is the usual default;
+/// <c>orderOneCrossover</c> is built specifically for permutation genotypes - chromosomes
+/// where every gene value must appear exactly once (for example, one queen per row in
+/// <c>NQueens</c>, or one city per visit in a routing problem). A single-point cut on a
+/// permutation would usually produce children
 /// with duplicate and missing genes, which is what <c>orderOneCrossover</c> avoids.
 /// <c>wholeArithmeticCrossover</c> is different again: it only works for real-valued
 /// (<c>float</c>) genotypes, since it blends parent genes arithmetically instead of
@@ -49,6 +50,58 @@ module Crossover =
             Genes = Array.append parent1Head parent2Tail },
         { p2 with
             Genes = Array.append parent2Head parent1Tail }
+
+    /// <summary>
+    /// Combines two parents into two children by picking <paramref name="pointCount"/>
+    /// distinct random cut points and alternating which parent contributes each segment
+    /// between them - a generalization of <c>singlePoint</c> to more than one cut.
+    /// </summary>
+    /// <remarks>
+    /// Works for any gene array, but does not preserve permutations - if the parents are
+    /// permutations of the same values (as in <c>NQueens</c>), the children generally
+    /// won't be. Use <c>orderOneCrossover</c> for permutation genotypes instead.
+    ///
+    /// <paramref name="pointCount"/> must be less than the parents' <c>Genes</c> length
+    /// (there are only <c>Genes.Length - 1</c> valid cut positions); this is not
+    /// validated. A <paramref name="pointCount"/> of 1 behaves like <c>singlePoint</c>,
+    /// and 0 returns children identical to the parents. Both parents are expected to have
+    /// the same <c>Genes</c> length; this is not validated either. Curry
+    /// <paramref name="pointCount"/> (e.g. <c>Crossover.multiPoint 3</c>) to use this as
+    /// an <c>Options.CrossoverFn</c>.
+    /// </remarks>
+    /// <param name="pointCount">The number of cut points to use.</param>
+    /// <param name="p1">The first parent.</param>
+    /// <param name="p2">The second parent.</param>
+    /// <returns>
+    /// Two children, with contiguous segments alternately taken from each parent between
+    /// the chosen cut points.
+    /// </returns>
+    let multiPoint (pointCount: int) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        let length = p1.Genes.Length
+
+        let points =
+            [| 1 .. length - 1 |]
+            |> Array.sortBy (fun _ -> System.Random.Shared.Next())
+            |> Array.take pointCount
+            |> Array.sort
+
+        let boundaries = Array.concat [ [| 0 |]; points; [| length |] ]
+
+        let segments (genes: 'Gene array) =
+            boundaries |> Array.pairwise |> Array.map (fun (a, b) -> genes.[a .. b - 1])
+
+        let p1Segments = segments p1.Genes
+        let p2Segments = segments p2.Genes
+
+        let c1 =
+            Array.init p1Segments.Length (fun i -> if i % 2 = 0 then p1Segments.[i] else p2Segments.[i])
+            |> Array.concat
+
+        let c2 =
+            Array.init p1Segments.Length (fun i -> if i % 2 = 0 then p2Segments.[i] else p1Segments.[i])
+            |> Array.concat
+
+        { p1 with Genes = c1 }, { p2 with Genes = c2 }
 
     /// <summary>
     /// Combines two permutation-encoded parents into two children using order-one
