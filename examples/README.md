@@ -6,6 +6,8 @@ The examples are organized first by problem, then by language:
 
 ```text
 examples/
+  CodeBreaker/
+    fsharp/
   HelloWorld/
     csharp/
     fsharp/
@@ -103,6 +105,16 @@ Run the C# version:
 
 ```powershell
 dotnet run --project examples/NQueens/csharp
+```
+
+### CodeBreaker
+
+An XOR code-breaking example that evolves a binary candidate key until the encrypted message decodes to the known target. Fitness uses the Jaro distance to measure the similarity between the decoded and target strings.
+
+Run the F# version:
+
+```powershell
+dotnet run --project examples/CodeBreaker/fsharp
 ```
 
 ## Notes
