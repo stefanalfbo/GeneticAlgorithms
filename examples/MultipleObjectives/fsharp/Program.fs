@@ -29,6 +29,7 @@ let options =
       SelectionFn = Selection.elite
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
+      MutationFn = Mutation.shuffle
       OnGeneration = Genetic.printProgress }
 
 let solution = Genetic.run problem options

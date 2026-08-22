@@ -19,13 +19,15 @@ type GeneticAlgorithm =
           SelectionFn = Selection.elite
           CrossoverFn = Crossover.singlePoint
           MutationRate = 0.05
+          MutationFn = Mutation.shuffle
           OnGeneration = Genetic.printProgress }
 
     static member CreateOptions<'Gene>
         (
             populationSize: int,
             selectionFn: Func<Chromosome<'Gene> array, int, Chromosome<'Gene> array>,
-            crossoverFn: Func<Chromosome<'Gene>, Chromosome<'Gene>, Chromosome<'Gene> * Chromosome<'Gene>>
+            crossoverFn: Func<Chromosome<'Gene>, Chromosome<'Gene>, Chromosome<'Gene> * Chromosome<'Gene>>,
+            mutationFn: Func<Chromosome<'Gene>, Chromosome<'Gene>>
         ) : Options<'Gene> =
         if isNull selectionFn then
             nullArg "selectionFn"
@@ -33,11 +35,15 @@ type GeneticAlgorithm =
         if isNull crossoverFn then
             nullArg "crossoverFn"
 
+        if isNull mutationFn then
+            nullArg "mutationFn"
+
         { PopulationSize = populationSize
           SelectionRate = 0.8
           SelectionFn = fun population n -> selectionFn.Invoke(population, n)
           CrossoverFn = fun p1 p2 -> crossoverFn.Invoke(p1, p2)
           MutationRate = 0.05
+          MutationFn = fun chromosome -> mutationFn.Invoke chromosome
           OnGeneration = Genetic.printProgress }
 
     static member CreateProblem<'Gene>
@@ -112,9 +118,10 @@ type Interop =
         (
             populationSize: int,
             selectionFn: Func<Chromosome<'Gene> array, int, Chromosome<'Gene> array>,
-            crossoverFn: Func<Chromosome<'Gene>, Chromosome<'Gene>, Chromosome<'Gene> * Chromosome<'Gene>>
+            crossoverFn: Func<Chromosome<'Gene>, Chromosome<'Gene>, Chromosome<'Gene> * Chromosome<'Gene>>,
+            mutationFn: Func<Chromosome<'Gene>, Chromosome<'Gene>>
         ) : Options<'Gene> =
-        GeneticAlgorithm.CreateOptions(populationSize, selectionFn, crossoverFn)
+        GeneticAlgorithm.CreateOptions(populationSize, selectionFn, crossoverFn, mutationFn)
 
     static member CreateProblem<'Gene>
         (

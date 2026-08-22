@@ -6,7 +6,8 @@ const double maxFitness = n;
 var options = GeneticAlgorithm.CreateOptions<int>(
     populationSize: 100,
     selectionFn: Selection.elite,
-    crossoverFn: Crossover.orderOneCrossover);
+    crossoverFn: Crossover.orderOneCrossover,
+    mutationFn: Mutation.shuffle);
 
 var solution = GeneticAlgorithm.Run(
     genotype: () => GeneticAlgorithm.CreateChromosome(

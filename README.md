@@ -30,7 +30,7 @@ dotnet add package GeneticAlgorithms
 * Population evaluation with age tracking and fitness sorting
 * Configurable parent selection: elite, random, tournament, tournament without duplicates, roulette-wheel, Boltzmann, stochastic universal sampling, or rank-based
 * Configurable crossover: single-point by default, or order-one crossover for permutation genotypes
-* Configurable mutation rate, applied by random gene shuffling
+* Configurable mutation: rate and strategy, gene-shuffling by default
 * Included examples and automated tests
 
 ## Project Structure
@@ -82,10 +82,11 @@ type Options<'Gene> =
       SelectionFn: Chromosome<'Gene> array -> int -> Chromosome<'Gene> array
       CrossoverFn: Chromosome<'Gene> -> Chromosome<'Gene> -> Chromosome<'Gene> * Chromosome<'Gene>
       MutationRate: float
+      MutationFn: Chromosome<'Gene> -> Chromosome<'Gene>
       OnGeneration: Chromosome<'Gene> -> int -> unit }
 ```
 
-`SelectionFn` picks from the `Selection` module (`Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, `Selection.rank`) or a custom function of the same shape. `CrossoverFn` picks from the `Crossover` module (`Crossover.singlePoint` for any gene array, or `Crossover.orderOneCrossover` for permutation genotypes such as `NQueens`) or a custom function of the same shape. `OnGeneration` is called with the current generation's best chromosome after every evaluation, so callers decide whether and how to report progress - `Genetic.printProgress` is a ready-made implementation that prints the best fitness.
+`SelectionFn` picks from the `Selection` module (`Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, `Selection.rank`) or a custom function of the same shape. `CrossoverFn` picks from the `Crossover` module (`Crossover.singlePoint` for any gene array, or `Crossover.orderOneCrossover` for permutation genotypes such as `NQueens`) or a custom function of the same shape. `MutationFn` picks from the `Mutation` module (currently just `Mutation.shuffle`) or a custom function of the same shape; `Genetic.mutation` decides per chromosome, via `MutationRate`, whether to apply it at all. `OnGeneration` is called with the current generation's best chromosome after every evaluation, so callers decide whether and how to report progress - `Genetic.printProgress` is a ready-made implementation that prints the best fitness.
 
 ## Algorithm Flow
 
@@ -97,7 +98,7 @@ type Options<'Gene> =
 4. Stop if the termination function returns `true` for the current population, generation, and temperature.
 5. Otherwise, select parents using `SelectionFn` and `SelectionRate`, keeping any unselected chromosomes as leftover.
 6. Produce children from the selected parents using `CrossoverFn`.
-7. Combine children with the leftover chromosomes and apply mutation at `MutationRate`.
+7. Combine children with the leftover chromosomes and apply `MutationFn` to each, with probability `MutationRate`.
 8. Repeat from step 2 with the resulting population.
 
 The termination callback receives the evaluated population, the current generation number, and a temperature value computed from recent fitness progress, so problems can stop either on solution quality, a generation cap, temperature behavior, or a combination of those signals.
@@ -153,6 +154,7 @@ let options =
       SelectionFn = Selection.elite
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
+      MutationFn = Mutation.shuffle
       OnGeneration = Genetic.printProgress }
 
 let solution = Genetic.run problem options
@@ -173,13 +175,14 @@ var solution = GeneticAlgorithm.Run(
   populationSize: 8);
 ```
 
-To use a non-default selection or crossover strategy, build `Options<'Gene>` with `GeneticAlgorithm.CreateOptions(populationSize, selectionFn, crossoverFn)` instead - the library's own `Selection`/`Crossover` module functions can be passed directly as method groups, since they compile to ordinary multi-argument static methods:
+To use a non-default selection, crossover, or mutation strategy, build `Options<'Gene>` with `GeneticAlgorithm.CreateOptions(populationSize, selectionFn, crossoverFn, mutationFn)` instead - the library's own `Selection`/`Crossover`/`Mutation` module functions can be passed directly as method groups, since they compile to ordinary multi-argument static methods:
 
 ```csharp
 var options = GeneticAlgorithm.CreateOptions<int>(
   populationSize: 100,
   selectionFn: Selection.elite,
-  crossoverFn: Crossover.orderOneCrossover);
+  crossoverFn: Crossover.orderOneCrossover,
+  mutationFn: Mutation.shuffle);
 
 var solution = GeneticAlgorithm.Run(genotype, fitnessFunction, terminate, options);
 ```
@@ -198,19 +201,20 @@ The test project verifies the main building blocks of the algorithm:
 
 * `Genetic.evaluate` applies fitness, increments age, and sorts by descending fitness
 * `Genetic.crossover` preserves chromosome size and recombines parent genes using the supplied `CrossoverFn`
-* `Genetic.mutation` preserves population size and gene membership
+* `Genetic.mutation` preserves population size and gene membership, applying `MutationFn` per chromosome at `MutationRate`
 * `Genetic.initialize` creates the requested number of chromosomes
 * `Genetic.run` returns the fittest chromosome when termination is reached
 * `Genetic.run` forwards generation and temperature values to the termination callback
 * `Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, and `Selection.rank` each return the requested number of chromosomes under their respective selection rules
 * `Selection.select` splits a population into parent pairs and leftover chromosomes according to `SelectionRate`, rounding odd counts up to stay even
 * `Crossover.orderOneCrossover` always produces children that are valid permutations of the parents' genes, with no duplicate or missing values
+* `Mutation.shuffle` preserves the exact multiset of gene values, only reordering them
 
 ## Design Notes
 
 This implementation is intentionally minimal. A few design choices to be aware of:
 
-* Mutation shuffles the genes within a chromosome rather than replacing individual genes with newly generated values
+* `Mutation.shuffle`, the only strategy currently implemented, shuffles the genes within a chromosome rather than replacing individual genes with newly generated values
 * There is no configurable crossover rate; `CrossoverFn` always runs on every selected parent pair
 * Randomness always comes from `System.Random.Shared`, so evolution runs are not seedable or reproducible
 

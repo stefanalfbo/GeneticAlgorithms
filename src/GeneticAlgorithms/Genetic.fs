@@ -23,14 +23,10 @@ module Genetic =
             [| c1; c2 |])
 
     let mutation (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
-        let shuffle xs =
-            xs |> Array.sortBy (fun _ -> System.Random.Shared.Next())
-
         population
         |> Array.map (fun chromosome ->
             if System.Random.Shared.NextDouble() < opts.MutationRate then
-                { chromosome with
-                    Genes = shuffle chromosome.Genes }
+                opts.MutationFn chromosome
             else
                 chromosome)
 

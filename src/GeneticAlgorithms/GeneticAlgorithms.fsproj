@@ -21,6 +21,7 @@
     <Compile Include="Chromosome.fs" />
     <Compile Include="Problem.fs" />
     <Compile Include="Crossover.fs" />
+    <Compile Include="Mutation.fs" />
     <Compile Include="Options.fs" />
     <Compile Include="Selection.fs" />
     <Compile Include="Genetic.fs" />
