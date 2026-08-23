@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="DistanceTests.fs" />
     <Compile Include="SelectionTests.fs" />
     <Compile Include="CrossoverTests.fs" />
     <Compile Include="MutationTests.fs" />

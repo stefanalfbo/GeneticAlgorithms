@@ -31,6 +31,7 @@ dotnet add package GeneticAlgorithms
 * Configurable parent selection: elite, random, tournament, tournament without duplicates, roulette-wheel, Boltzmann, stochastic universal sampling, or rank-based
 * Configurable crossover: single-point by default, or order-one crossover for permutation genotypes
 * Configurable mutation: rate and strategy, gene-shuffling by default
+* A `Distance` module with reusable string-similarity functions (currently Jaro similarity) for building fitness functions that compare a candidate string against a target
 * Included examples and automated tests
 
 ## Project Structure
@@ -209,6 +210,7 @@ The test project verifies the main building blocks of the algorithm:
 * `Selection.select` splits a population into parent pairs and leftover chromosomes according to `SelectionRate`, rounding odd counts up to stay even
 * `Crossover.orderOneCrossover` always produces children that are valid permutations of the parents' genes, with no duplicate or missing values
 * `Mutation.shuffle` preserves the exact multiset of gene values, only reordering them
+* `Distance.jaro` matches known reference values (for example, the standard `MARTHA`/`MARHTA` example), and is symmetric
 
 ## Design Notes
 
