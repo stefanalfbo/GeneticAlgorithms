@@ -49,6 +49,49 @@ let scrambleTests =
               Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
 
 [<Tests>]
+let scrambleSliceTests =
+    testList
+        "Mutation.scrambleSlice"
+        [ testCase "preserves the number of genes"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0 .. 9 |]
+
+              for _ in 1..100 do
+                  let result = Mutation.scrambleSlice 4 chromosome
+
+                  Expect.equal result.Genes.Length chromosome.Genes.Length "gene count should be preserved"
+
+          testCase "produces a permutation of the original genes"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0 .. 9 |]
+
+              for _ in 1..100 do
+                  let result = Mutation.scrambleSlice 4 chromosome
+
+                  Expect.containsAll
+                      result.Genes
+                      chromosome.Genes
+                      "mutated genes should be a permutation of the original genes"
+
+          testCase "leaves fitness and age unchanged"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0 .. 9 |]
+
+              let result = Mutation.scrambleSlice 4 chromosome
+
+              Expect.equal result.Fitness chromosome.Fitness "fitness should be unchanged"
+              Expect.equal result.Age chromosome.Age "age should be unchanged"
+
+          testCase "does not mutate the original chromosome"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0 .. 9 |]
+              let genesBefore = Array.copy chromosome.Genes
+
+              Mutation.scrambleSlice 4 chromosome |> ignore
+
+              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
+
+[<Tests>]
 let flipTests =
     testList
         "Mutation.flip"
