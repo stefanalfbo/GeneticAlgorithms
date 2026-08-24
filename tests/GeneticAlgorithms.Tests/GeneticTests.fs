@@ -11,7 +11,7 @@ let private opts: Options<int> =
       SelectionFn = Selection.elite
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
-      MutationFn = Mutation.shuffle
+      MutationFn = Mutation.scramble
       OnGeneration = fun _ _ -> () }
 
 [<Tests>]

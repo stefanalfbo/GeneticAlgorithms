@@ -11,12 +11,12 @@ namespace GeneticAlgorithms
 /// strategies here only decide how to mutate a chromosome once that decision has already
 /// been made. <c>flip</c> and <c>flipEachGene</c> only make sense for binary genotypes
 /// (<c>Chromosome&lt;int&gt;</c> with genes of <c>0</c> or <c>1</c>), so unlike
-/// <c>shuffle</c> they work on <c>int</c> specifically rather than any <c>'Gene</c> type.
+/// <c>scramble</c> they work on <c>int</c> specifically rather than any <c>'Gene</c> type.
 /// </remarks>
 module Mutation =
 
     /// <summary>
-    /// Mutates a chromosome by randomly shuffling its genes into a new order.
+    /// Mutates a chromosome by randomly scrambling its genes into a new order.
     /// </summary>
     /// <remarks>
     /// Preserves the exact multiset of gene values, so it never introduces a gene value
@@ -25,8 +25,8 @@ module Mutation =
     /// generated values.
     /// </remarks>
     /// <param name="chromosome">The chromosome to mutate.</param>
-    /// <returns>A new chromosome with the same genes in a randomly shuffled order.</returns>
-    let shuffle (chromosome: Chromosome<'Gene>) =
+    /// <returns>A new chromosome with the same genes in a randomly scrambled order.</returns>
+    let scramble (chromosome: Chromosome<'Gene>) =
         { chromosome with
             Genes = chromosome.Genes |> Array.sortBy (fun _ -> System.Random.Shared.Next()) }
 

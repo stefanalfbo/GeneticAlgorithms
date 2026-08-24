@@ -7,14 +7,14 @@ let private makeChromosome genes : Chromosome<int> =
     { Genes = genes; Fitness = 3.0; Age = 2 }
 
 [<Tests>]
-let shuffleTests =
+let scrambleTests =
     testList
-        "Mutation.shuffle"
+        "Mutation.scramble"
         [ testCase "preserves the number of genes"
           <| fun _ ->
               let chromosome = makeChromosome [| 1; 2; 3; 4; 5 |]
 
-              let result = Mutation.shuffle chromosome
+              let result = Mutation.scramble chromosome
 
               Expect.equal result.Genes.Length chromosome.Genes.Length "gene count should be preserved"
 
@@ -23,7 +23,7 @@ let shuffleTests =
               let chromosome = makeChromosome [| 1; 2; 3; 4; 5 |]
 
               for _ in 1..100 do
-                  let result = Mutation.shuffle chromosome
+                  let result = Mutation.scramble chromosome
 
                   Expect.containsAll
                       result.Genes
@@ -34,7 +34,7 @@ let shuffleTests =
           <| fun _ ->
               let chromosome = makeChromosome [| 1; 2; 3; 4; 5 |]
 
-              let result = Mutation.shuffle chromosome
+              let result = Mutation.scramble chromosome
 
               Expect.equal result.Fitness chromosome.Fitness "fitness should be unchanged"
               Expect.equal result.Age chromosome.Age "age should be unchanged"
@@ -44,7 +44,7 @@ let shuffleTests =
               let chromosome = makeChromosome [| 1; 2; 3; 4; 5 |]
               let genesBefore = Array.copy chromosome.Genes
 
-              Mutation.shuffle chromosome |> ignore
+              Mutation.scramble chromosome |> ignore
 
               Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
 

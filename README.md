@@ -87,7 +87,7 @@ type Options<'Gene> =
       OnGeneration: Chromosome<'Gene> -> int -> unit }
 ```
 
-`SelectionFn` picks from the `Selection` module (`Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, `Selection.rank`) or a custom function of the same shape. `CrossoverFn` picks from the `Crossover` module (`Crossover.singlePoint` for any gene array, or `Crossover.orderOneCrossover` for permutation genotypes such as `NQueens`) or a custom function of the same shape. `MutationFn` picks from the `Mutation` module (`Mutation.shuffle` for any gene array, or `Mutation.flip`/`Mutation.flipEachGene` for binary genotypes) or a custom function of the same shape; `Genetic.mutation` decides per chromosome, via `MutationRate`, whether to apply it at all. `OnGeneration` is called with the current generation's best chromosome after every evaluation, so callers decide whether and how to report progress - `Genetic.printProgress` is a ready-made implementation that prints the best fitness.
+`SelectionFn` picks from the `Selection` module (`Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, `Selection.rank`) or a custom function of the same shape. `CrossoverFn` picks from the `Crossover` module (`Crossover.singlePoint` for any gene array, or `Crossover.orderOneCrossover` for permutation genotypes such as `NQueens`) or a custom function of the same shape. `MutationFn` picks from the `Mutation` module (`Mutation.scramble` for any gene array, or `Mutation.flip`/`Mutation.flipEachGene` for binary genotypes) or a custom function of the same shape; `Genetic.mutation` decides per chromosome, via `MutationRate`, whether to apply it at all. `OnGeneration` is called with the current generation's best chromosome after every evaluation, so callers decide whether and how to report progress - `Genetic.printProgress` is a ready-made implementation that prints the best fitness.
 
 ## Algorithm Flow
 
@@ -155,7 +155,7 @@ let options =
       SelectionFn = Selection.elite
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
-      MutationFn = Mutation.shuffle
+      MutationFn = Mutation.scramble
       OnGeneration = Genetic.printProgress }
 
 let solution = Genetic.run problem options
@@ -183,7 +183,7 @@ var options = GeneticAlgorithm.CreateOptions<int>(
   populationSize: 100,
   selectionFn: Selection.elite,
   crossoverFn: Crossover.orderOneCrossover,
-  mutationFn: Mutation.shuffle);
+  mutationFn: Mutation.scramble);
 
 var solution = GeneticAlgorithm.Run(genotype, fitnessFunction, terminate, options);
 ```
@@ -209,7 +209,7 @@ The test project verifies the main building blocks of the algorithm:
 * `Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, and `Selection.rank` each return the requested number of chromosomes under their respective selection rules
 * `Selection.select` splits a population into parent pairs and leftover chromosomes according to `SelectionRate`, rounding odd counts up to stay even
 * `Crossover.orderOneCrossover` always produces children that are valid permutations of the parents' genes, with no duplicate or missing values
-* `Mutation.shuffle` preserves the exact multiset of gene values, only reordering them
+* `Mutation.scramble` preserves the exact multiset of gene values, only reordering them
 * `Mutation.flip` flips every gene, and `Mutation.flipEachGene` flips each gene independently at its own probability
 * `Distance.jaro` matches known reference values (for example, the standard `MARTHA`/`MARHTA` example), and is symmetric
 
@@ -217,7 +217,7 @@ The test project verifies the main building blocks of the algorithm:
 
 This implementation is intentionally minimal. A few design choices to be aware of:
 
-* `Mutation.shuffle` is the default strategy, shuffling the genes within a chromosome rather than replacing individual genes with newly generated values; `Mutation.flip` and `Mutation.flipEachGene` are binary-genotype alternatives
+* `Mutation.scramble` is the default strategy, scrambling the genes within a chromosome rather than replacing individual genes with newly generated values; `Mutation.flip` and `Mutation.flipEachGene` are binary-genotype alternatives
 * There is no configurable crossover rate; `CrossoverFn` always runs on every selected parent pair
 * Randomness always comes from `System.Random.Shared`, so evolution runs are not seedable or reproducible
 
