@@ -12,6 +12,8 @@ namespace GeneticAlgorithms
 /// been made. <c>flip</c> and <c>flipEachGene</c> only make sense for binary genotypes
 /// (<c>Chromosome&lt;int&gt;</c> with genes of <c>0</c> or <c>1</c>), so unlike
 /// <c>scramble</c> they work on <c>int</c> specifically rather than any <c>'Gene</c> type.
+/// <c>gaussian</c> is the real-valued counterpart: it only makes sense for
+/// <c>Chromosome&lt;float&gt;</c>.
 /// </remarks>
 module Mutation =
 
@@ -102,3 +104,43 @@ module Mutation =
             Genes =
                 chromosome.Genes
                 |> Array.map (fun gene -> if System.Random.Shared.NextDouble() < rate then gene ^^^ 1 else gene) }
+
+    /// Draws a random sample from a normal distribution with the given mean and variance,
+    /// via the Box-Muller transform. .NET's <c>System.Random</c> only generates uniform
+    /// samples, so there is no built-in Gaussian source to call instead. The first uniform
+    /// draw is taken as <c>1.0 - NextDouble()</c> rather than <c>NextDouble()</c> directly,
+    /// so it lands in <c>(0.0, 1.0]</c> instead of <c>[0.0, 1.0)</c> - <c>NextDouble()</c>
+    /// can return exactly <c>0.0</c>, which would make <c>log</c> diverge.
+    let private nextGaussian (mean: float) (variance: float) =
+        let u1 = 1.0 - System.Random.Shared.NextDouble()
+        let u2 = System.Random.Shared.NextDouble()
+        let standardNormal = sqrt (-2.0 * log u1) * cos (2.0 * System.Math.PI * u2)
+        mean + sqrt variance * standardNormal
+
+    /// <summary>
+    /// Mutates a real-valued chromosome by resampling every gene from a normal
+    /// distribution fitted to the chromosome's own genes: the mean and variance of the
+    /// current gene values are used to draw a fresh, independent value for every gene
+    /// position.
+    /// </summary>
+    /// <remarks>
+    /// Unlike the other strategies in this module, which rearrange or flip existing gene
+    /// values, Gaussian mutation replaces every gene with a newly sampled value - only the
+    /// chromosome's own mean and variance carry over, not the individual gene values
+    /// themselves. Only makes sense for real-valued genotypes, so it works on
+    /// <c>Chromosome&lt;float&gt;</c> specifically rather than any <c>'Gene</c> type, and
+    /// (like <c>flip</c>) always mutates every gene - there is no per-gene rate to
+    /// configure.
+    /// </remarks>
+    /// <param name="chromosome">The chromosome to mutate.</param>
+    /// <returns>
+    /// A new chromosome with every gene independently resampled from a normal
+    /// distribution fitted to the original genes.
+    /// </returns>
+    let gaussian (chromosome: Chromosome<float>) =
+        let genes = chromosome.Genes
+        let mu = Array.average genes
+        let variance = genes |> Array.averageBy (fun x -> (mu - x) * (mu - x))
+
+        { chromosome with
+            Genes = genes |> Array.map (fun _ -> nextGaussian mu variance) }

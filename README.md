@@ -91,7 +91,7 @@ type Options<'Gene> =
 
 `CrossoverFn` picks from the `Crossover` module (`Crossover.singlePoint` for any gene array, or `Crossover.orderOneCrossover` for permutation genotypes such as `NQueens`) or a custom function of the same shape.
 
-`MutationFn` picks from the `Mutation` module (`Mutation.scramble`/`Mutation.scrambleSlice` for any gene array, or `Mutation.flip`/`Mutation.flipEachGene` for binary genotypes) or a custom function of the same shape; `Genetic.mutation` decides per chromosome, via `MutationRate`, whether to apply it at all.
+`MutationFn` picks from the `Mutation` module (`Mutation.scramble`/`Mutation.scrambleSlice` for any gene array, `Mutation.flip`/`Mutation.flipEachGene` for binary genotypes, or `Mutation.gaussian` for real-valued genotypes) or a custom function of the same shape; `Genetic.mutation` decides per chromosome, via `MutationRate`, whether to apply it at all.
 
 `OnGeneration` is called with the current generation's best chromosome after every evaluation, so callers decide whether and how to report progress - `Genetic.printProgress` is a ready-made implementation that prints the best fitness.
 
@@ -217,13 +217,14 @@ The test project verifies the main building blocks of the algorithm:
 * `Crossover.orderOneCrossover` always produces children that are valid permutations of the parents' genes, with no duplicate or missing values
 * `Mutation.scramble` and `Mutation.scrambleSlice` preserve the exact multiset of gene values (and, for `scrambleSlice`, the overall chromosome length), only reordering them
 * `Mutation.flip` flips every gene, and `Mutation.flipEachGene` flips each gene independently at its own probability
+* `Mutation.gaussian` preserves chromosome length and its resampled genes have approximately the same mean as the original genes
 * `Distance.jaro` matches known reference values (for example, the standard `MARTHA`/`MARHTA` example), and is symmetric
 
 ## Design Notes
 
 This implementation is intentionally minimal. A few design choices to be aware of:
 
-* `Mutation.scramble` is the default strategy, scrambling the genes within a chromosome rather than replacing individual genes with newly generated values; `Mutation.scrambleSlice` scrambles only a random window instead of the whole chromosome, and `Mutation.flip`/`Mutation.flipEachGene` are binary-genotype alternatives
+* `Mutation.scramble` is the default strategy, scrambling the genes within a chromosome rather than replacing individual genes with newly generated values; `Mutation.scrambleSlice` scrambles only a random window instead of the whole chromosome, `Mutation.flip`/`Mutation.flipEachGene` are binary-genotype alternatives, and `Mutation.gaussian` is a real-valued alternative that resamples every gene from a normal distribution fitted to the chromosome's own genes
 * There is no configurable crossover rate; `CrossoverFn` always runs on every selected parent pair
 * Randomness always comes from `System.Random.Shared`, so evolution runs are not seedable or reproducible
 

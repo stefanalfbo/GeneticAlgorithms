@@ -6,6 +6,9 @@ open GeneticAlgorithms
 let private makeChromosome genes : Chromosome<int> =
     { Genes = genes; Fitness = 3.0; Age = 2 }
 
+let private makeFloatChromosome genes : Chromosome<float> =
+    { Genes = genes; Fitness = 3.0; Age = 2 }
+
 [<Tests>]
 let scrambleTests =
     testList
@@ -181,3 +184,55 @@ let flipEachGeneTests =
               Mutation.flipEachGene 0.5 chromosome |> ignore
 
               Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
+
+[<Tests>]
+let gaussianTests =
+    testList
+        "Mutation.gaussian"
+        [ testCase "preserves the number of genes"
+          <| fun _ ->
+              let chromosome = makeFloatChromosome [| 1.0; 2.0; 3.0; 4.0; 5.0 |]
+
+              let result = Mutation.gaussian chromosome
+
+              Expect.equal result.Genes.Length chromosome.Genes.Length "gene count should be preserved"
+
+          testCase "leaves fitness and age unchanged"
+          <| fun _ ->
+              let chromosome = makeFloatChromosome [| 1.0; 2.0; 3.0; 4.0; 5.0 |]
+
+              let result = Mutation.gaussian chromosome
+
+              Expect.equal result.Fitness chromosome.Fitness "fitness should be unchanged"
+              Expect.equal result.Age chromosome.Age "age should be unchanged"
+
+          testCase "does not mutate the original chromosome"
+          <| fun _ ->
+              let chromosome = makeFloatChromosome [| 1.0; 2.0; 3.0; 4.0; 5.0 |]
+              let genesBefore = Array.copy chromosome.Genes
+
+              Mutation.gaussian chromosome |> ignore
+
+              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged"
+
+          testCase "when every gene is identical, the variance is zero and every mutated gene equals that value"
+          <| fun _ ->
+              // With zero variance the Box-Muller draw always lands exactly on the mean,
+              // regardless of randomness - fully deterministic, not just overwhelmingly likely.
+              let chromosome = makeFloatChromosome (Array.create 10 5.0)
+
+              let result = Mutation.gaussian chromosome
+
+              Expect.equal result.Genes chromosome.Genes "every gene should equal the shared value"
+
+          testCase "resampled genes have approximately the same mean as the original genes"
+          <| fun _ ->
+              let chromosome = makeFloatChromosome (Array.init 1000 (fun i -> float (i % 100)))
+              let expectedMean = Array.average chromosome.Genes
+
+              let result = Mutation.gaussian chromosome
+              let actualMean = Array.average result.Genes
+
+              Expect.isTrue
+                  (abs (actualMean - expectedMean) < 5.0)
+                  $"resampled mean {actualMean} should be close to the original mean {expectedMean}" ]
