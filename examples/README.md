@@ -24,6 +24,8 @@ examples/
   OneMaxProblem/
     csharp/
     fsharp/
+  Schedule/
+    fsharp/
 ```
 
 ## Available Examples
@@ -122,6 +124,16 @@ Run the C# version:
 
 ```powershell
 dotnet run --project examples/CodeBreaker/csharp
+```
+
+### Schedule
+
+A multi-objective, constrained optimization example where the goal is to choose a set of classes, under an 18-credit-hour limit, that maximizes interest and usefulness while minimizing difficulty. The credit-hour limit is enforced with a large fitness penalty rather than by restricting the genotype.
+
+Run the F# version:
+
+```powershell
+dotnet run --project examples/Schedule/fsharp
 ```
 
 ## Notes
