@@ -7,6 +7,7 @@ The examples are organized first by problem, then by language:
 ```text
 examples/
   CodeBreaker/
+    csharp/
     fsharp/
   HelloWorld/
     csharp/
@@ -115,6 +116,12 @@ Run the F# version:
 
 ```powershell
 dotnet run --project examples/CodeBreaker/fsharp
+```
+
+Run the C# version:
+
+```powershell
+dotnet run --project examples/CodeBreaker/csharp
 ```
 
 ## Notes
