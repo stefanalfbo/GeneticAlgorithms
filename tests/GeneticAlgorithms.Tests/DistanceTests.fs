@@ -4,6 +4,39 @@ open Expecto
 open GeneticAlgorithms
 
 [<Tests>]
+let hammingTests =
+    testList
+        "Distance.hamming"
+        [ testCase "identical arrays have a distance of zero"
+          <| fun _ -> Expect.equal (Distance.hamming [| 1; 0; 1 |] [| 1; 0; 1 |]) 0 "no positions should differ"
+
+          testCase "empty arrays have a distance of zero"
+          <| fun _ -> Expect.equal (Distance.hamming Array.empty<int> Array.empty<int>) 0 "empty arrays should be identical"
+
+          testCase "counts positions containing different values"
+          <| fun _ ->
+              Expect.equal (Distance.hamming [| 1; 0; 1; 1 |] [| 0; 0; 1; 0 |]) 2 "two positions should differ"
+
+          testCase "works with non-numeric values"
+          <| fun _ -> Expect.equal (Distance.hamming [| 'a'; 'b'; 'c' |] [| 'a'; 'x'; 'c' |]) 1 "one character should differ"
+
+          testCase "is symmetric"
+          <| fun _ ->
+              let left = [| 1; 0; 0; 1 |]
+              let right = [| 0; 0; 1; 1 |]
+
+              Expect.equal
+                  (Distance.hamming left right)
+                  (Distance.hamming right left)
+                  "distance should not depend on argument order"
+
+          testCase "rejects arrays of different lengths"
+          <| fun _ ->
+              Expect.throwsT<System.ArgumentException>
+                  (fun _ -> Distance.hamming [| 1; 0 |] [| 1 |] |> ignore)
+                  "Hamming distance should require arrays of equal length" ]
+
+[<Tests>]
 let jaroTests =
     testList
         "Distance.jaro"

@@ -10,6 +10,32 @@ open System
 module Distance =
 
     /// <summary>
+    /// Computes the Hamming distance between two arrays by counting the positions at which
+    /// their elements differ.
+    /// </summary>
+    /// <remarks>
+    /// Hamming distance is defined only for sequences of equal length. A result of <c>0</c>
+    /// means the arrays are identical, while the largest possible result is their length.
+    /// </remarks>
+    /// <param name="left">The first array to compare.</param>
+    /// <param name="right">The second array to compare.</param>
+    /// <returns>The number of positions containing different elements.</returns>
+    /// <exception cref="T:System.ArgumentException">
+    /// Thrown when <paramref name="left"/> and <paramref name="right"/> have different lengths.
+    /// </exception>
+    let hamming (left: 'T array) (right: 'T array) =
+        if left.Length <> right.Length then
+            invalidArg (nameof right) "Hamming distance requires arrays of equal length."
+
+        let mutable distance = 0
+
+        for index in 0 .. left.Length - 1 do
+            if left.[index] <> right.[index] then
+                distance <- distance + 1
+
+        distance
+
+    /// <summary>
     /// Computes the Jaro similarity between two strings: <c>1.0</c> means the strings are
     /// identical, and <c>0.0</c> means they share no similarity at all.
     /// </summary>
