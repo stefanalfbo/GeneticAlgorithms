@@ -25,6 +25,7 @@ examples/
     csharp/
     fsharp/
   Schedule/
+    csharp/
     fsharp/
 ```
 
@@ -134,6 +135,12 @@ Run the F# version:
 
 ```powershell
 dotnet run --project examples/Schedule/fsharp
+```
+
+Run the C# version:
+
+```powershell
+dotnet run --project examples/Schedule/csharp
 ```
 
 ## Notes
