@@ -23,7 +23,7 @@ module Distance =
     /// <exception cref="T:System.ArgumentException">
     /// Thrown when <paramref name="left"/> and <paramref name="right"/> have different lengths.
     /// </exception>
-    let hamming (left: 'T array) (right: 'T array) =
+    let hammingDistance (left: 'T array) (right: 'T array) =
         if left.Length <> right.Length then
             invalidArg (nameof right) "Hamming distance requires arrays of equal length."
 
@@ -50,7 +50,7 @@ module Distance =
     /// <param name="left">The first string to compare.</param>
     /// <param name="right">The second string to compare.</param>
     /// <returns>A similarity score between <c>0.0</c> and <c>1.0</c>.</returns>
-    let jaro (left: string) (right: string) =
+    let jaroSimilarity (left: string) (right: string) =
         if left = right then
             1.0
         elif String.IsNullOrEmpty(left) || String.IsNullOrEmpty(right) then

@@ -23,7 +23,7 @@ let fitnessFunction (chromosome: Chromosome<int>) =
     chromosome
     |> chromosomeKey
     |> cipher encrypted
-    |> Distance.jaro target
+    |> Distance.jaroSimilarity target
 
 let terminate (population: seq<Chromosome<int>>) (_generation: int) (_temperature: float) =
     population |> Seq.exists (fun chromosome -> chromosome.Fitness >= 1.0)

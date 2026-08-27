@@ -218,7 +218,7 @@ The test project verifies the main building blocks of the algorithm:
 * `Mutation.scramble` and `Mutation.scrambleSlice` preserve the exact multiset of gene values (and, for `scrambleSlice`, the overall chromosome length), only reordering them
 * `Mutation.flip` flips every gene, and `Mutation.flipEachGene` flips each gene independently at its own probability
 * `Mutation.gaussian` preserves chromosome length and its resampled genes have approximately the same mean as the original genes
-* `Distance.jaro` matches known reference values (for example, the standard `MARTHA`/`MARHTA` example), and is symmetric
+* `Distance.jaroSimilarity` matches known reference values (for example, the standard `MARTHA`/`MARHTA` example), and is symmetric
 
 ## Design Notes
 

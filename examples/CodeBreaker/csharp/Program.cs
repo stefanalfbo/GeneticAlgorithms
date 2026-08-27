@@ -8,7 +8,7 @@ var solution = GeneticAlgorithm.Run(
         Enumerable.Range(0, target.Length)
             .Select(_ => Random.Shared.Next(0, 2))
             .ToArray()),
-    fitnessFunction: chromosome => Distance.jaro(target, Cipher(encrypted, ChromosomeKey(chromosome))),
+    fitnessFunction: chromosome => Distance.jaroSimilarity(target, Cipher(encrypted, ChromosomeKey(chromosome))),
     terminate: (population, generation, temperature) =>
         population.Any(chromosome => chromosome.Fitness >= 1.0),
     populationSize: 100);

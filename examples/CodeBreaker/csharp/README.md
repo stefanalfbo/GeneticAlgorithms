@@ -22,7 +22,7 @@ Because the cipher reduces character values modulo `32768`, only the lower 15 bi
 
 ## Purpose
 
-This example mirrors the F# CodeBreaker version, but uses the C# facade provided by `GeneticAlgorithms.GeneticAlgorithm`. It uses `Distance.jaro` straight from C#, the same way `Selection`/`Crossover`/`Mutation` module functions can be passed as method groups elsewhere in these examples - here it's called directly as an ordinary two-argument static method inside the fitness function.
+This example mirrors the F# CodeBreaker version, but uses the C# facade provided by `GeneticAlgorithms.GeneticAlgorithm`. It uses `Distance.jaroSimilarity` straight from C#, the same way `Selection`/`Crossover`/`Mutation` module functions can be passed as method groups elsewhere in these examples - here it's called directly as an ordinary two-argument static method inside the fitness function.
 
 ## Fitness
 
