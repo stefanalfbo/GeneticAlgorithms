@@ -92,7 +92,42 @@ let scrambleSliceTests =
 
               Mutation.scrambleSlice 4 chromosome |> ignore
 
-              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
+              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged"
+
+          testCase "when the chosen window would extend past the end, shifts it back to stay in bounds"
+          <| fun _ ->
+              // With a 6-gene chromosome and a window of 5, start + n is at least 1 + 5 = 6,
+              // which is always >= size (6) - the "shift back" branch is taken on every draw,
+              // not just overwhelmingly likely. The shifted window is always [1..5], so gene 0
+              // is always left untouched.
+              let chromosome = makeChromosome [| 0 .. 5 |]
+
+              for _ in 1..100 do
+                  let result = Mutation.scrambleSlice 5 chromosome
+
+                  Expect.equal result.Genes.[0] chromosome.Genes.[0] "gene before the shifted window should be untouched"
+
+                  Expect.containsAll
+                      result.Genes.[1..]
+                      chromosome.Genes.[1..]
+                      "shifted window should contain the same genes, reordered"
+
+          testCase "when the window size equals the chromosome size, scrambles every gene"
+          <| fun _ ->
+              // With a 5-gene chromosome and a window of 5, the shift-back branch always fires
+              // and the shifted window spans the entire chromosome (lo = 0, hi = size) -
+              // deterministic, not just overwhelmingly likely.
+              let chromosome = makeChromosome [| 0 .. 4 |]
+
+              for _ in 1..100 do
+                  let result = Mutation.scrambleSlice 5 chromosome
+
+                  Expect.equal result.Genes.Length chromosome.Genes.Length "gene count should be preserved"
+
+                  Expect.containsAll
+                      result.Genes
+                      chromosome.Genes
+                      "mutated genes should be a permutation of the original genes" ]
 
 [<Tests>]
 let flipTests =
