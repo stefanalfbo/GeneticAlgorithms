@@ -184,6 +184,10 @@ let runTests =
                   "options should be required"
 
               Expect.throwsT<ArgumentNullException>
+                  (fun _ -> GeneticAlgorithm.Run(nullProblem, options) |> ignore)
+                  "problem should be required"
+
+              Expect.throwsT<ArgumentNullException>
                   (fun _ -> GeneticAlgorithm.Run(genotype, fitness, terminate, nullOptions) |> ignore)
                   "options should be required" ]
 
