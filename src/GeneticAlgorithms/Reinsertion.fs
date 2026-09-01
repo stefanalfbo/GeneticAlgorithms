@@ -42,3 +42,45 @@ module Reinsertion =
         (_leftover: Chromosome<'Gene> array)
         =
         offspring
+
+    /// <summary>
+    /// Combines <paramref name="offspring"/> with the fittest survivors of the previous
+    /// generation: pools <paramref name="parents"/> and <paramref name="leftover"/> back
+    /// together, and carries over the fittest
+    /// <c>floor((parents.Length + leftover.Length) * survivalRate)</c> of them alongside
+    /// <paramref name="offspring"/>.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <c>pure</c>, this never discards the previous generation outright - it keeps
+    /// whichever of <paramref name="parents"/> and <paramref name="leftover"/> are fittest,
+    /// which both preserves good genes that crossover or mutation might otherwise have lost
+    /// and gives some control over population size: since <c>parents.Length + leftover.Length</c>
+    /// equals the previous generation's population size, choosing
+    /// <c>survivalRate</c> around <c>1.0 - SelectionRate - MutationRate</c> keeps the
+    /// population roughly stable rather than drifting, as <c>pure</c> does. Assumes
+    /// <paramref name="survivalRate"/> is in <c>[0, 1]</c>; this is not validated - a value
+    /// above <c>1.0</c> would ask for more survivors than exist. Curry
+    /// <paramref name="survivalRate"/> (e.g. <c>Reinsertion.elitist 0.15</c>) to use this as
+    /// an <c>Options.ReinsertionFn</c>.
+    /// </remarks>
+    /// <param name="survivalRate">The fraction of the previous generation to carry over as survivors.</param>
+    /// <param name="parents">The chromosomes selected as crossover parents this generation.</param>
+    /// <param name="offspring">This generation's crossover children and mutants.</param>
+    /// <param name="leftover">The chromosomes not selected as parents this generation.</param>
+    /// <returns>
+    /// <paramref name="offspring"/> combined with the fittest survivors of
+    /// <paramref name="parents"/> and <paramref name="leftover"/>.
+    /// </returns>
+    let elitist
+        (survivalRate: float)
+        (parents: Chromosome<'Gene> array)
+        (offspring: Chromosome<'Gene> array)
+        (leftover: Chromosome<'Gene> array)
+        =
+        let old = Array.append parents leftover
+        let n = int (float old.Length * survivalRate)
+
+        let survivors =
+            old |> Array.sortByDescending (fun chromosome -> chromosome.Fitness) |> Array.take n
+
+        Array.append offspring survivors
