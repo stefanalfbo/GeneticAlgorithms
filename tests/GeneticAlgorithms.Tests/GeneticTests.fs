@@ -12,6 +12,7 @@ let private opts: Options<int> =
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       MutationFn = Mutation.scramble
+      ReinsertionFn = Reinsertion.``pure``
       OnGeneration = fun _ _ -> () }
 
 [<Tests>]
@@ -84,13 +85,21 @@ let crossoverTests =
 let mutationTests =
     testList
         "Genetic.mutation"
-        [ testCase "preserves the population size"
+        [ testCase "returns floor(population size * mutation rate) mutants"
           <| fun _ ->
               let population = Array.init 20 (fun i -> makeChromosome [| i |])
 
               let result = Genetic.mutation opts population
 
-              Expect.equal result.Length population.Length "population size should be unchanged"
+              Expect.equal result.Length 1 "20 * 0.05 = 1 mutant"
+
+          testCase "rounds the sample size down rather than up"
+          <| fun _ ->
+              let population = Array.init 5 (fun i -> makeChromosome [| i |])
+
+              let result = Genetic.mutation opts population
+
+              Expect.equal result.Length 0 "5 * 0.05 = 0.25, floored to 0"
 
           testCase "mutated genes are a permutation of the original genes"
           <| fun _ ->
@@ -98,6 +107,8 @@ let mutationTests =
               let population = Array.create 50 chromosome
 
               let result = Genetic.mutation opts population
+
+              Expect.equal result.Length 2 "50 * 0.05 = 2 mutants"
 
               for c in result do
                   Expect.equal c.Genes.Length chromosome.Genes.Length "gene count should be preserved"

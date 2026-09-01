@@ -199,6 +199,13 @@ module Selection =
     /// (rounded up to an even number) using <c>opts.SelectionFn</c>, pairs them up, and
     /// returns whatever wasn't selected as leftover.
     /// </summary>
+    /// <remarks>
+    /// The rounded-up count is capped at the largest even number that doesn't exceed
+    /// <paramref name="population"/>'s length - without this, a <c>SelectionRate</c> of 1.0
+    /// (or population sizes that make rounding land above the population itself) would ask
+    /// <c>opts.SelectionFn</c> for more chromosomes than exist, which fails for
+    /// implementations like <c>elite</c> that take a fixed slice.
+    /// </remarks>
     /// <param name="opts">Provides <c>SelectionRate</c> and <c>SelectionFn</c>.</param>
     /// <param name="population">The population to select parents from.</param>
     /// <returns>
@@ -206,8 +213,10 @@ module Selection =
     /// to the next generation unchanged (aside from mutation).
     /// </returns>
     let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
+        let maxN = population.Length - (population.Length % 2)
         let n = int (System.Math.Round(float population.Length * opts.SelectionRate))
         let n = if n % 2 = 0 then n else n + 1
+        let n = min n maxN
 
         let parents = opts.SelectionFn population n
         let leftover = population |> Seq.except parents |> Seq.toArray

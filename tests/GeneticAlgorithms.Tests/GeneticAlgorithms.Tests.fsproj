@@ -12,6 +12,7 @@
     <Compile Include="SelectionTests.fs" />
     <Compile Include="CrossoverTests.fs" />
     <Compile Include="MutationTests.fs" />
+    <Compile Include="ReinsertionTests.fs" />
     <Compile Include="GeneticTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

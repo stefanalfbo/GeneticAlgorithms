@@ -162,6 +162,7 @@ let options =
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       MutationFn = Mutation.scramble
+      ReinsertionFn = Reinsertion.``pure``
       OnGeneration = Genetic.printProgress }
 
 let solution = Genetic.run problem options

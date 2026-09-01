@@ -20,6 +20,7 @@ type GeneticAlgorithm =
           CrossoverFn = Crossover.singlePoint
           MutationRate = 0.05
           MutationFn = Mutation.scramble
+          ReinsertionFn = Reinsertion.``pure``
           OnGeneration = Genetic.printProgress }
 
     static member CreateOptions<'Gene>
@@ -44,6 +45,7 @@ type GeneticAlgorithm =
           CrossoverFn = fun p1 p2 -> crossoverFn.Invoke(p1, p2)
           MutationRate = 0.05
           MutationFn = fun chromosome -> mutationFn.Invoke chromosome
+          ReinsertionFn = Reinsertion.``pure``
           OnGeneration = Genetic.printProgress }
 
     static member CreateProblem<'Gene>

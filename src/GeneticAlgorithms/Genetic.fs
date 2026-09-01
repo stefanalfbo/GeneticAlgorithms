@@ -23,12 +23,12 @@ module Genetic =
             [| c1; c2 |])
 
     let mutation (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
+        let n = int (float population.Length * opts.MutationRate)
+
         population
-        |> Array.map (fun chromosome ->
-            if System.Random.Shared.NextDouble() < opts.MutationRate then
-                opts.MutationFn chromosome
-            else
-                chromosome)
+        |> Array.sortBy (fun _ -> System.Random.Shared.Next())
+        |> Array.take n
+        |> Array.map opts.MutationFn
 
     let rec evolve
         (opts: Options<'Gene>)
@@ -48,11 +48,12 @@ module Genetic =
         if problem.Terminate nextPopulation generation newTemperature then
             best
         else
-            let parents, leftover = Selection.select opts nextPopulation
-            let children = crossover opts.CrossoverFn parents
+            let parentPairs, leftover = Selection.select opts nextPopulation
+            let children = crossover opts.CrossoverFn parentPairs
+            let mutants = mutation opts nextPopulation
+            let parents = parentPairs |> Array.collect (fun (p1, p2) -> [| p1; p2 |])
 
-            Array.append children leftover
-            |> mutation opts
+            opts.ReinsertionFn parents (Array.append children mutants) leftover
             |> evolve opts problem (generation + 1) best.Fitness newTemperature
 
     let initialize genotype (opts: Options<'Gene>) =

@@ -19,6 +19,7 @@ let private opts: Options<int> =
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       MutationFn = Mutation.scramble
+      ReinsertionFn = Reinsertion.``pure``
       OnGeneration = fun _ _ -> () }
 
 [<Tests>]
@@ -222,4 +223,17 @@ let selectTests =
               let parentPairs, leftover = Selection.select { opts with SelectionRate = 0.75 } population
 
               Expect.equal parentPairs.Length 2 "the selection count should be rounded up to stay even"
-              Expect.equal leftover.Length 0 "no chromosomes should be left over" ]
+              Expect.equal leftover.Length 0 "no chromosomes should be left over"
+
+          testCase "clamps the selection count so rounding up never exceeds an odd population"
+          <| fun _ ->
+              // With SelectionRate = 1.0 the rounded-up count would be 6 for a 5-chromosome
+              // population - one more than exists. It must be clamped to 4 (the largest even
+              // number that still fits), leaving the fifth chromosome as leftover.
+              let oddPopulation = Array.append population [| makeChromosome 0.5 |]
+
+              let parentPairs, leftover =
+                  Selection.select { opts with SelectionRate = 1.0 } oddPopulation
+
+              Expect.equal parentPairs.Length 2 "selection count should be clamped to 4 (2 pairs)"
+              Expect.equal leftover.Length 1 "the chromosome that didn't fit should be left over" ]

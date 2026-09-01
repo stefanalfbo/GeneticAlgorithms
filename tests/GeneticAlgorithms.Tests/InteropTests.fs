@@ -28,6 +28,7 @@ let private options: Options<int> =
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       MutationFn = Mutation.scramble
+      ReinsertionFn = Reinsertion.``pure``
       OnGeneration = fun _ _ -> () }
 
 let private expectSolution (solution: Chromosome<int>) =
