@@ -24,6 +24,8 @@ examples/
   OneMaxProblem/
     csharp/
     fsharp/
+  Reinsertion/
+    fsharp/
   Schedule/
     csharp/
     fsharp/
@@ -141,6 +143,16 @@ Run the C# version:
 
 ```powershell
 dotnet run --project examples/Schedule/csharp
+```
+
+### Reinsertion
+
+Reuses the `Schedule` problem to compare the library's three reinsertion strategies (`pure`, `elitist`, `uniform`) side by side: the same problem is run once per strategy, with every other setting held fixed, and the best fitness at each generation is printed in a comparison table so the effect of the reinsertion strategy alone is visible.
+
+Run the F# version (this example has no C# variant):
+
+```powershell
+dotnet run --project examples/Reinsertion/fsharp
 ```
 
 ## Notes
