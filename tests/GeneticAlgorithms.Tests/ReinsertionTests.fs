@@ -111,3 +111,61 @@ let elitistTests =
                   result
                   (Array.concat [ offspring; parents; leftover ])
                   "every chromosome should be present in the result" ]
+
+[<Tests>]
+let uniformTests =
+    testList
+        "Reinsertion.uniform"
+        [ testCase "keeps every offspring"
+          <| fun _ ->
+              let offspring = [| makeChromosome [| 1 |]; makeChromosome [| 2 |] |]
+              let parents = [| makeChromosome [| 9 |] |]
+
+              let result = Reinsertion.uniform 1.0 parents offspring [||]
+
+              Expect.containsAll result offspring "every offspring chromosome should be in the result"
+
+          testCase "carries over floor((parents + leftover) * survivalRate) survivors"
+          <| fun _ ->
+              let parents = [| makeChromosome [| 1 |]; makeChromosome [| 2 |] |]
+              let leftover = [| makeChromosome [| 3 |]; makeChromosome [| 4 |] |]
+
+              let result = Reinsertion.uniform 0.5 parents [||] leftover
+
+              Expect.equal result.Length 2 "4 old chromosomes * 0.5 survival rate = 2 survivors"
+
+          testCase "survivors only come from parents and leftover"
+          <| fun _ ->
+              let parents = [| makeChromosome [| 1 |]; makeChromosome [| 2 |] |]
+              let leftover = [| makeChromosome [| 3 |]; makeChromosome [| 4 |] |]
+              let old = Array.append parents leftover
+
+              for _ in 1..100 do
+                  let result = Reinsertion.uniform 0.5 parents [||] leftover
+
+                  Expect.all result (fun c -> Array.contains c old) "every survivor should come from parents or leftover"
+
+          testCase "at survivalRate 0.0, behaves like pure - no survivors carried over"
+          <| fun _ ->
+              let parents = [| makeChromosome [| 9 |] |]
+              let leftover = [| makeChromosome [| 8 |] |]
+              let offspring = [| makeChromosome [| 1 |] |]
+
+              let result = Reinsertion.uniform 0.0 parents offspring leftover
+
+              Expect.equal result offspring "no survivors should be carried over at a 0.0 survival rate"
+
+          testCase "at survivalRate 1.0, carries over every parent and leftover chromosome"
+          <| fun _ ->
+              let parents = [| makeChromosome [| 9 |] |]
+              let leftover = [| makeChromosome [| 8 |] |]
+              let offspring = [| makeChromosome [| 1 |] |]
+
+              let result = Reinsertion.uniform 1.0 parents offspring leftover
+
+              Expect.equal result.Length 3 "offspring plus every parent and leftover chromosome should survive"
+
+              Expect.containsAll
+                  result
+                  (Array.concat [ offspring; parents; leftover ])
+                  "every chromosome should be present in the result" ]
