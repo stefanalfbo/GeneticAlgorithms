@@ -147,7 +147,7 @@ dotnet run --project examples/Schedule/csharp
 
 ### Reinsertion
 
-Reuses the `Schedule` problem to compare the library's three reinsertion strategies (`pure`, `elitist`, `uniform`) side by side: the same problem is run once per strategy, with every other setting held fixed, and the best fitness at each generation is printed in a comparison table so the effect of the reinsertion strategy alone is visible.
+Compares the library's three reinsertion strategies (`pure`, `elitist`, `uniform`) side by side on a large OneMax-style problem: the same problem is run once per strategy, with every other setting held fixed, and the best fitness at each generation is printed in a comparison table so the effect of the reinsertion strategy alone is visible. A large search space is used deliberately, so a strategy that loses population diversity (`pure`) visibly falls behind rather than getting lucky.
 
 Run the F# version (this example has no C# variant):
 

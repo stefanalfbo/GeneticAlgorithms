@@ -1,55 +1,25 @@
 open GeneticAlgorithms
 
-// Same class-scheduling problem as the Schedule example - see its README for the full
-// explanation of the domain. Reused here unchanged so the only thing that varies between
-// the three runs below is the reinsertion strategy, not the problem being solved.
+// A OneMax-style problem: maximize the number of 1s in a binary chromosome. Deliberately
+// simple and large (see numberOfGenes below) so the only thing that determines how well a
+// run does is how well it explores and preserves diversity - which is exactly what
+// reinsertion controls. A small search space (like the Schedule example's 10 genes) lets
+// even a badly shrunk population stumble onto a near-optimal answer by luck, which hides
+// the differences between strategies rather than showing them.
 
-let numberOfClasses = 10
+let numberOfGenes = 500
+let maxFitness = float numberOfGenes
 
 let genotype () =
-    let genes = Array.init numberOfClasses (fun _ -> System.Random.Shared.Next(0, 2))
+    let genes = Array.init numberOfGenes (fun _ -> System.Random.Shared.Next(0, 2))
 
     { Genes = genes
       Fitness = 0.0
       Age = 0 }
 
-let private classNames =
-    [| "Algorithms"
-       "Artificial Intelligence"
-       "Calculus"
-       "Chemistry"
-       "Data Structures"
-       "Discrete Math"
-       "History"
-       "Literature"
-       "Physics"
-       "Volleyball" |]
+let fitness_function (chromosome: Chromosome<int>) = chromosome.Genes |> Array.sum |> float
 
-let private creditHours = [| 3.0; 3.0; 3.0; 4.5; 3.0; 3.0; 3.0; 3.0; 4.5; 1.5 |]
-let private difficulties = [| 8.0; 9.0; 4.0; 3.0; 5.0; 2.0; 4.0; 2.0; 6.0; 1.0 |]
-let private usefulness = [| 8.0; 9.0; 6.0; 2.0; 8.0; 9.0; 1.0; 2.0; 5.0; 1.0 |]
-let private interest = [| 8.0; 8.0; 5.0; 9.0; 7.0; 2.0; 8.0; 2.0; 7.0; 10.0 |]
-
-let fitness_function (chromosome: Chromosome<int>) =
-    let schedule = chromosome.Genes
-
-    if schedule.Length <> creditHours.Length then
-        invalidArg (nameof chromosome) $"Expected {creditHours.Length} genes, but received {schedule.Length}."
-
-    let fitness =
-        schedule
-        |> Array.mapi (fun index selected ->
-            float selected
-            * (0.3 * usefulness.[index] + 0.3 * interest.[index] - 0.3 * difficulties.[index]))
-        |> Array.sum
-
-    let credits =
-        Array.map2 (fun selected creditHours -> float selected * creditHours) schedule creditHours
-        |> Array.sum
-
-    if credits > 18.0 then -99999.0 else fitness
-
-let lastGeneration = 1000
+let lastGeneration = 300
 
 let terminate (_population: seq<Chromosome<int>>) (generation: int) (_temperature: float) =
     generation = lastGeneration
@@ -101,25 +71,28 @@ let runStrategy (name: string, reinsertionFn) =
 
 let results = strategies |> List.map runStrategy
 
-printfn "Best fitness by generation (sampled every 100 generations):"
+printfn "Maximum possible fitness: %.0f (all %d genes set to 1)" maxFitness numberOfGenes
+printfn ""
+printfn "Best fitness by generation (sampled every 30 generations):"
 printfn "%10s | %8s | %8s | %8s" "Generation" "pure" "elitist" "uniform"
 
-for generation in 0 .. 100 .. lastGeneration do
+for generation in 0 .. 30 .. lastGeneration do
     let fitnessAt (_, _, fitnessByGeneration: float array) = fitnessByGeneration.[generation]
 
     printfn
-        "%10d | %8.2f | %8.2f | %8.2f"
+        "%10d | %8.1f | %8.1f | %8.1f"
         generation
         (fitnessAt results.[0])
         (fitnessAt results.[1])
         (fitnessAt results.[2])
 
 printfn ""
-printfn "Final schedules:"
+printfn "Final results:"
 
 for name, solution, _ in results do
-    let selectedClasses =
-        Array.zip solution.Genes classNames
-        |> Array.choose (fun (selected, className) -> if selected = 1 then Some className else None)
-
-    printfn "%-8s fitness: %8.2f  classes: %s" name solution.Fitness (String.concat ", " selectedClasses)
+    printfn
+        "%-8s fitness: %5.1f / %.0f (%5.1f%% of maximum)"
+        name
+        solution.Fitness
+        maxFitness
+        (100.0 * solution.Fitness / maxFitness)
