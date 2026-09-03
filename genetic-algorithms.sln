@@ -43,6 +43,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Schedule.CSharp", "examples
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Reinsertion", "examples\Reinsertion\fsharp\Reinsertion.fsproj", "{5B98E6B6-5789-4158-A32C-BE0B8C79F2DD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reinsertion.CSharp", "examples\Reinsertion\csharp\Reinsertion.CSharp.csproj", "{51ADDE65-7A94-4890-909C-6731BCFF5F08}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -257,6 +259,18 @@ Global
 		{5B98E6B6-5789-4158-A32C-BE0B8C79F2DD}.Release|x64.Build.0 = Release|Any CPU
 		{5B98E6B6-5789-4158-A32C-BE0B8C79F2DD}.Release|x86.ActiveCfg = Release|Any CPU
 		{5B98E6B6-5789-4158-A32C-BE0B8C79F2DD}.Release|x86.Build.0 = Release|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Debug|x64.Build.0 = Debug|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Debug|x86.Build.0 = Debug|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Release|x64.ActiveCfg = Release|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Release|x64.Build.0 = Release|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Release|x86.ActiveCfg = Release|Any CPU
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -279,5 +293,6 @@ Global
 		{69BF9B58-FF9E-4BDC-98D2-75E5BC566892} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{58372295-5280-44A8-914C-A698228002A4} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{5B98E6B6-5789-4158-A32C-BE0B8C79F2DD} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
+		{51ADDE65-7A94-4890-909C-6731BCFF5F08} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 	EndGlobalSection
 EndGlobal

@@ -95,6 +95,69 @@ let createOptionsTests =
               Expect.equal (result.SelectionFn [| first; second |] 1) [| first |] "selection delegate should be invoked"
               Expect.equal (result.CrossoverFn first second) (second, first) "crossover delegate should be invoked"
               Expect.equal (result.MutationFn first).Age 1 "mutation delegate should be invoked"
+              Expect.equal (result.ReinsertionFn [||] [| first |] [||]) [| first |] "default reinsertion should be pure"
+
+          testCase "adapts a custom reinsertion delegate"
+          <| fun _ ->
+              let selection =
+                  Func<Chromosome<int> array, int, Chromosome<int> array>(fun population count ->
+                      population |> Array.take count)
+
+              let crossover =
+                  Func<Chromosome<int>, Chromosome<int>, Chromosome<int> * Chromosome<int>>(fun left right ->
+                      left, right)
+
+              let mutation = Func<Chromosome<int>, Chromosome<int>>(fun candidate -> candidate)
+
+              let reinsertion =
+                  Func<Chromosome<int> array, Chromosome<int> array, Chromosome<int> array, Chromosome<int> array>(
+                      fun parents offspring leftover -> Array.concat [ offspring; parents; leftover ]
+                  )
+
+              let result =
+                  GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, reinsertion)
+
+              let parents = [| chromosome [| 1 |] |]
+              let offspring = [| chromosome [| 2 |] |]
+              let leftover = [| chromosome [| 3 |] |]
+
+              Expect.equal
+                  (result.ReinsertionFn parents offspring leftover)
+                  (Array.concat [ offspring; parents; leftover ])
+                  "reinsertion delegate should be invoked"
+
+          testCase "adapts a custom onGeneration delegate"
+          <| fun _ ->
+              let selection =
+                  Func<Chromosome<int> array, int, Chromosome<int> array>(fun population count ->
+                      population |> Array.take count)
+
+              let crossover =
+                  Func<Chromosome<int>, Chromosome<int>, Chromosome<int> * Chromosome<int>>(fun left right ->
+                      left, right)
+
+              let mutation = Func<Chromosome<int>, Chromosome<int>>(fun candidate -> candidate)
+
+              let reinsertion =
+                  Func<Chromosome<int> array, Chromosome<int> array, Chromosome<int> array, Chromosome<int> array>(
+                      fun _ offspring _ -> offspring
+                  )
+
+              let mutable observedFitness = 0.0
+              let mutable observedGeneration = -1
+
+              let onGeneration =
+                  Action<Chromosome<int>, int>(fun best generation ->
+                      observedFitness <- best.Fitness
+                      observedGeneration <- generation)
+
+              let result =
+                  GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, reinsertion, onGeneration)
+
+              result.OnGeneration (chromosome [| 1 |] |> fun c -> { c with Fitness = 42.0 }) 7
+
+              Expect.equal observedFitness 42.0 "onGeneration delegate should observe the best chromosome"
+              Expect.equal observedGeneration 7 "onGeneration delegate should observe the generation number"
 
           testCase "rejects null custom delegates"
           <| fun _ ->
@@ -107,6 +170,13 @@ let createOptionsTests =
 
               let mutation = Func<Chromosome<int>, Chromosome<int>>(fun candidate -> candidate)
 
+              let reinsertion =
+                  Func<Chromosome<int> array, Chromosome<int> array, Chromosome<int> array, Chromosome<int> array>(
+                      fun _ offspring _ -> offspring
+                  )
+
+              let onGeneration = Action<Chromosome<int>, int>(fun _ _ -> ())
+
               Expect.throwsT<ArgumentNullException>
                   (fun _ -> GeneticAlgorithm.CreateOptions(10, null, crossover, mutation) |> ignore)
                   "selection delegate should be required"
@@ -117,7 +187,53 @@ let createOptionsTests =
 
               Expect.throwsT<ArgumentNullException>
                   (fun _ -> GeneticAlgorithm.CreateOptions(10, selection, crossover, null) |> ignore)
-                  "mutation delegate should be required" ]
+                  "mutation delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ -> GeneticAlgorithm.CreateOptions(10, null, crossover, mutation, reinsertion) |> ignore)
+                  "selection delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ -> GeneticAlgorithm.CreateOptions(10, selection, null, mutation, reinsertion) |> ignore)
+                  "crossover delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ -> GeneticAlgorithm.CreateOptions(10, selection, crossover, null, reinsertion) |> ignore)
+                  "mutation delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ -> GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, null) |> ignore)
+                  "reinsertion delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, null, crossover, mutation, reinsertion, onGeneration)
+                      |> ignore)
+                  "selection delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, selection, null, mutation, reinsertion, onGeneration)
+                      |> ignore)
+                  "crossover delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, selection, crossover, null, reinsertion, onGeneration)
+                      |> ignore)
+                  "mutation delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, null, onGeneration)
+                      |> ignore)
+                  "reinsertion delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, reinsertion, null)
+                      |> ignore)
+                  "onGeneration delegate should be required" ]
 
 [<Tests>]
 let createProblemTests =
@@ -220,6 +336,60 @@ let compatibilityFacadeTests =
               let result = Interop.CreateOptions(4, selection, crossover, mutation)
 
               Expect.equal result.PopulationSize 4 "custom options creation should be forwarded"
+
+          testCase "forwards a custom reinsertion delegate"
+          <| fun _ ->
+              let selection =
+                  Func<Chromosome<int> array, int, Chromosome<int> array>(fun population count ->
+                      population |> Array.take count)
+
+              let crossover =
+                  Func<Chromosome<int>, Chromosome<int>, Chromosome<int> * Chromosome<int>>(fun left right ->
+                      left, right)
+
+              let mutation = Func<Chromosome<int>, Chromosome<int>>(fun candidate -> candidate)
+
+              let reinsertion =
+                  Func<Chromosome<int> array, Chromosome<int> array, Chromosome<int> array, Chromosome<int> array>(
+                      fun _ offspring _ -> offspring
+                  )
+
+              let result =
+                  Interop.CreateOptions(4, selection, crossover, mutation, reinsertion)
+
+              let offspring = [| chromosome [| 1 |] |]
+
+              Expect.equal
+                  (result.ReinsertionFn [||] offspring [||])
+                  offspring
+                  "reinsertion delegate creation should be forwarded"
+
+          testCase "forwards a custom onGeneration delegate"
+          <| fun _ ->
+              let selection =
+                  Func<Chromosome<int> array, int, Chromosome<int> array>(fun population count ->
+                      population |> Array.take count)
+
+              let crossover =
+                  Func<Chromosome<int>, Chromosome<int>, Chromosome<int> * Chromosome<int>>(fun left right ->
+                      left, right)
+
+              let mutation = Func<Chromosome<int>, Chromosome<int>>(fun candidate -> candidate)
+
+              let reinsertion =
+                  Func<Chromosome<int> array, Chromosome<int> array, Chromosome<int> array, Chromosome<int> array>(
+                      fun _ offspring _ -> offspring
+                  )
+
+              let mutable observedGeneration = -1
+              let onGeneration = Action<Chromosome<int>, int>(fun _ generation -> observedGeneration <- generation)
+
+              let result =
+                  Interop.CreateOptions(4, selection, crossover, mutation, reinsertion, onGeneration)
+
+              result.OnGeneration (chromosome [| 1 |]) 5
+
+              Expect.equal observedGeneration 5 "onGeneration delegate creation should be forwarded"
 
           testCase "forwards every Run overload"
           <| fun _ ->
