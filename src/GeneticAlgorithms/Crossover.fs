@@ -9,11 +9,14 @@ namespace GeneticAlgorithms
 /// (two parents in, two children out), so any of them can be plugged in as
 /// <c>Options.CrossoverFn</c>. <c>singlePoint</c>, <c>multiPoint</c>, and <c>uniform</c>
 /// work for any gene array, and <c>singlePoint</c> is the usual default;
-/// <c>orderOneCrossover</c> is built specifically for permutation genotypes - chromosomes
-/// where every gene value must appear exactly once (for example, one queen per row in
-/// <c>NQueens</c>, or one city per visit in a routing problem). A single-point cut on a
-/// permutation would usually produce children
-/// with duplicate and missing genes, which is what <c>orderOneCrossover</c> avoids.
+/// <c>orderOneCrossover</c> and <c>cycleCrossover</c> are built specifically for
+/// permutation genotypes - chromosomes where every gene value must appear exactly once
+/// (for example, one queen per row in <c>NQueens</c>, or one city per visit in a routing
+/// problem). A single-point cut on a permutation would usually produce children with
+/// duplicate and missing genes, which is what both of those avoid, just via different
+/// means: <c>orderOneCrossover</c> copies a contiguous slice from one parent and fills the
+/// rest from the other, while <c>cycleCrossover</c> keeps every gene at its original
+/// position in whichever parent contributed it.
 /// <c>wholeArithmeticCrossover</c> is different again: it only works for real-valued
 /// (<c>float</c>) genotypes, since it blends parent genes arithmetically instead of
 /// swapping or copying them outright.
@@ -150,6 +153,69 @@ module Crossover =
             Genes = Array.concat [ head1; slice1; tail1 ] },
         { p2 with
             Genes = Array.concat [ head2; slice2; tail2 ] }
+
+    /// <summary>
+    /// Combines two permutation-encoded parents into two children using cycle crossover
+    /// (CX): every gene position belongs to exactly one "cycle" - follow the value at a
+    /// position in <paramref name="p1"/> to wherever that same value sits in
+    /// <paramref name="p2"/>, and repeat from there until the cycle returns to its
+    /// starting position - and each child copies every position in a given cycle from one
+    /// parent, alternating which parent contributes each successive cycle.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <c>orderOneCrossover</c>, which copies a contiguous slice from one parent and
+    /// fills the remaining positions from the other, cycle crossover never moves a gene
+    /// away from the position it already held in whichever parent contributed its cycle -
+    /// every gene in a child sits exactly where it sat in one of the two parents. Both
+    /// children are still guaranteed to stay valid permutations of the same gene set as the
+    /// parents, so this is a good fit for problems like <c>NQueens</c>, where a
+    /// chromosome's genes represent a permutation (each row used exactly once) rather than
+    /// independent values.
+    ///
+    /// Both parents are expected to have the same, non-empty <c>Genes</c> length, and to be
+    /// permutations of the same gene set (every value appearing exactly once); this is not
+    /// validated.
+    /// </remarks>
+    /// <param name="p1">The first parent.</param>
+    /// <param name="p2">The second parent.</param>
+    /// <returns>
+    /// Two children: for each cycle of positions, the first child copies that cycle from
+    /// whichever parent alternation lands on (starting with <paramref name="p1"/> for the
+    /// first cycle), and the second child copies the other parent for that same cycle.
+    /// </returns>
+    let cycleCrossover (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        let length = p1.Genes.Length
+        let indexInP2 = System.Collections.Generic.Dictionary<'Gene, int>(length)
+
+        for i in 0 .. length - 1 do
+            indexInP2.[p2.Genes.[i]] <- i
+
+        let visited = Array.create length false
+        let c1 = Array.zeroCreate<'Gene> length
+        let c2 = Array.zeroCreate<'Gene> length
+        let mutable takeFromP1 = true
+
+        for start in 0 .. length - 1 do
+            if not visited.[start] then
+                let rec traceCycle idx =
+                    visited.[idx] <- true
+
+                    if takeFromP1 then
+                        c1.[idx] <- p1.Genes.[idx]
+                        c2.[idx] <- p2.Genes.[idx]
+                    else
+                        c1.[idx] <- p2.Genes.[idx]
+                        c2.[idx] <- p1.Genes.[idx]
+
+                    let next = indexInP2.[p1.Genes.[idx]]
+
+                    if next <> start then
+                        traceCycle next
+
+                traceCycle start
+                takeFromP1 <- not takeFromP1
+
+        { p1 with Genes = c1 }, { p2 with Genes = c2 }
 
     /// <summary>
     /// Combines two parents into two children by considering each gene position

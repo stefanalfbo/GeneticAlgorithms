@@ -115,6 +115,78 @@ let orderOneCrossoverTests =
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
 
 [<Tests>]
+let cycleCrossoverTests =
+    testList
+        "Crossover.cycleCrossover"
+        [ testCase "children have the same length as the parents"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |]
+
+              let c1, c2 = Crossover.cycleCrossover p1 p2
+
+              Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
+              Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
+
+          testCase "each child is a permutation of the parents' genes"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |]
+              let expectedGenes = Set.ofArray p1.Genes
+
+              let c1, c2 = Crossover.cycleCrossover p1 p2
+
+              Expect.equal (Array.distinct c1.Genes |> Array.length) c1.Genes.Length "first child should have no duplicate genes"
+              Expect.equal (Array.distinct c2.Genes |> Array.length) c2.Genes.Length "second child should have no duplicate genes"
+              Expect.equal (Set.ofArray c1.Genes) expectedGenes "first child should contain exactly the parents' genes"
+              Expect.equal (Set.ofArray c2.Genes) expectedGenes "second child should contain exactly the parents' genes"
+
+          testCase "at every position, each child's gene comes from one of the two parents at that same position"
+          <| fun _ ->
+              // Unlike orderOneCrossover, which can move a gene to a different position,
+              // cycle crossover always keeps a gene at the index it held in whichever
+              // parent contributed it - this is the property that distinguishes it.
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |]
+
+              let c1, c2 = Crossover.cycleCrossover p1 p2
+
+              for i in 0 .. p1.Genes.Length - 1 do
+                  Expect.isTrue
+                      (c1.Genes.[i] = p1.Genes.[i] || c1.Genes.[i] = p2.Genes.[i])
+                      "the first child's gene should come from one of the two parents at the same position"
+
+                  Expect.isTrue
+                      (c2.Genes.[i] = p1.Genes.[i] || c2.Genes.[i] = p2.Genes.[i])
+                      "the second child's gene should come from one of the two parents at the same position"
+
+          testCase "produces the well-known worked example's result"
+          <| fun _ ->
+              // Cycle crossover has no randomness at all - the result is a pure function
+              // of the two parents, so this is fully deterministic. Cycles are {0, 8, 9},
+              // {1, 2, 4, 5, 6, 7}, and {3}; children alternate which parent contributes
+              // each successive cycle, starting with p1.
+              let p1 = makeChromosome [| 8; 4; 7; 3; 6; 2; 5; 1; 9; 0 |]
+              let p2 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 |]
+
+              let c1, c2 = Crossover.cycleCrossover p1 p2
+
+              Expect.equal c1.Genes [| 8; 1; 2; 3; 4; 5; 6; 7; 9; 0 |] "first child should match the worked example"
+              Expect.equal c2.Genes [| 0; 4; 7; 3; 6; 2; 5; 1; 8; 9 |] "second child should match the worked example"
+
+          testCase "does not mutate the parent chromosomes"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |]
+              let p1GenesBefore = Array.copy p1.Genes
+              let p2GenesBefore = Array.copy p2.Genes
+
+              Crossover.cycleCrossover p1 p2 |> ignore
+
+              Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+
+[<Tests>]
 let uniformTests =
     testList
         "Crossover.uniform"
