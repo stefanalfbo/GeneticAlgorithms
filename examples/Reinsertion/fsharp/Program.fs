@@ -48,7 +48,7 @@ let baseOptions: Options<int> =
       MutationRate = 0.05
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.``pure``
-      OnGeneration = fun _ _ -> () }
+      Probe = Probes.noop }
 
 let strategies: (string * (Chromosome<int> array -> Chromosome<int> array -> Chromosome<int> array -> Chromosome<int> array)) list =
     [ "pure", Reinsertion.``pure``
@@ -64,7 +64,7 @@ let runStrategy (name: string, reinsertionFn) =
     let options =
         { baseOptions with
             ReinsertionFn = reinsertionFn
-            OnGeneration = fun best generation -> fitnessByGeneration.[generation] <- best.Fitness }
+            Probe = fun info -> fitnessByGeneration.[info.Generation] <- info.Best.Fitness }
 
     let solution = Genetic.run problem options
     name, solution, fitnessByGeneration

@@ -13,9 +13,9 @@ A OneMax-style problem: maximize the number of `1`s in a 500-gene binary chromos
 Unlike the other C# examples, which call `GeneticAlgorithm.Run` with just a population size or a handful of delegates, this example needs to plug in a custom **reinsertion** strategy and observe **per-generation progress** - neither of which the library's C# facade (`GeneticAlgorithm.CreateOptions`) exposed before this example was added. Building it required extending `GeneticAlgorithm.CreateOptions` with two new overload parameters:
 
 * `reinsertionFn` - a `Func<Chromosome<T>[], Chromosome<T>[], Chromosome<T>[], Chromosome<T>[]>` for `Options.ReinsertionFn`.
-* `onGeneration` - an `Action<Chromosome<T>, int>` for `Options.OnGeneration`, used here to record the best fitness at every generation.
+* `probe` - an `Action<GenerationInfo<T>>` for `Options.Probe`, used here to record the best fitness at every generation.
 
-Both mirror how `selectionFn`, `crossoverFn`, and `mutationFn` were already exposed, so any C# consumer - not just this example - can now configure every part of the algorithm without touching F#-specific types.
+Both mirror how `selectionFn`, `crossoverFn`, and `mutationFn` were already exposed, so any C# consumer - not just this example - can now configure every part of the algorithm without touching F#-specific types. `Options.Probe` defaults to a no-op (`Probes.noop`) - probing is opt-in - so this example passes its own recording lambda explicitly rather than relying on any built-in behavior.
 
 Passing the library's own reinsertion functions in from C# works without any extra glue code:
 
@@ -58,4 +58,4 @@ As with the F# version, `elitist` and `uniform` reliably reach the perfect score
 
 ## Related Projects
 
-This example is part of the GeneticAlgorithms library. It's the C# counterpart to the [`Reinsertion`](../fsharp/README.md) F# example, and it's what motivated adding `reinsertionFn` and `onGeneration` to `GeneticAlgorithm.CreateOptions`.
+This example is part of the GeneticAlgorithms library. It's the C# counterpart to the [`Reinsertion`](../fsharp/README.md) F# example, and it's what motivated adding `reinsertionFn` and `probe` to `GeneticAlgorithm.CreateOptions`.

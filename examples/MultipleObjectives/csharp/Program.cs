@@ -9,7 +9,8 @@ var solution = GeneticAlgorithm.Run(
             .ToArray()),
     fitnessFunction: chromosome => chromosome.Genes.Sum(gene => 2 * gene.Roi - gene.Risk),
     terminate: (population, _, _) => population.Any(chromosome => chromosome.Fitness >= targetFitness),
-    populationSize: 125);
+    populationSize: 125,
+    probe: Probes.printProgress);
 
 Console.WriteLine(
     $"Best solution: [{string.Join("; ", solution.Genes.Select(gene => $"({gene.Roi}, {gene.Risk})"))}] " +

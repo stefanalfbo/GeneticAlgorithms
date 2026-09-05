@@ -29,7 +29,7 @@ let private options: Options<int> =
       MutationRate = 0.05
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.``pure``
-      OnGeneration = fun _ _ -> () }
+      Probe = fun _ -> () }
 
 let private expectSolution (solution: Chromosome<int>) =
     Expect.equal solution.Genes [| 7 |] "the configured genotype should be returned"
@@ -97,6 +97,14 @@ let createOptionsTests =
               Expect.equal (result.MutationFn first).Age 1 "mutation delegate should be invoked"
               Expect.equal (result.ReinsertionFn [||] [| first |] [||]) [| first |] "default reinsertion should be pure"
 
+              // The default probe is a no-op - calling it should have no observable effect
+              // and, in particular, should not throw.
+              result.Probe
+                  { Generation = 0
+                    Population = [| first |]
+                    Best = first
+                    Temperature = 0.0 }
+
           testCase "adapts a custom reinsertion delegate"
           <| fun _ ->
               let selection =
@@ -126,7 +134,7 @@ let createOptionsTests =
                   (Array.concat [ offspring; parents; leftover ])
                   "reinsertion delegate should be invoked"
 
-          testCase "adapts a custom onGeneration delegate"
+          testCase "adapts a custom probe delegate"
           <| fun _ ->
               let selection =
                   Func<Chromosome<int> array, int, Chromosome<int> array>(fun population count ->
@@ -145,19 +153,31 @@ let createOptionsTests =
 
               let mutable observedFitness = 0.0
               let mutable observedGeneration = -1
+              let mutable observedPopulationSize = 0
+              let mutable observedTemperature = 0.0
 
-              let onGeneration =
-                  Action<Chromosome<int>, int>(fun best generation ->
-                      observedFitness <- best.Fitness
-                      observedGeneration <- generation)
+              let probe =
+                  Action<GenerationInfo<int>>(fun info ->
+                      observedFitness <- info.Best.Fitness
+                      observedGeneration <- info.Generation
+                      observedPopulationSize <- info.Population.Length
+                      observedTemperature <- info.Temperature)
 
               let result =
-                  GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, reinsertion, onGeneration)
+                  GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, reinsertion, probe)
 
-              result.OnGeneration (chromosome [| 1 |] |> fun c -> { c with Fitness = 42.0 }) 7
+              let best = chromosome [| 1 |] |> fun c -> { c with Fitness = 42.0 }
 
-              Expect.equal observedFitness 42.0 "onGeneration delegate should observe the best chromosome"
-              Expect.equal observedGeneration 7 "onGeneration delegate should observe the generation number"
+              result.Probe
+                  { Generation = 7
+                    Population = [| best |]
+                    Best = best
+                    Temperature = 1.5 }
+
+              Expect.equal observedFitness 42.0 "probe delegate should observe the best chromosome"
+              Expect.equal observedGeneration 7 "probe delegate should observe the generation number"
+              Expect.equal observedPopulationSize 1 "probe delegate should observe the population"
+              Expect.equal observedTemperature 1.5 "probe delegate should observe the temperature"
 
           testCase "rejects null custom delegates"
           <| fun _ ->
@@ -175,7 +195,7 @@ let createOptionsTests =
                       fun _ offspring _ -> offspring
                   )
 
-              let onGeneration = Action<Chromosome<int>, int>(fun _ _ -> ())
+              let probe = Action<GenerationInfo<int>>(fun _ -> ())
 
               Expect.throwsT<ArgumentNullException>
                   (fun _ -> GeneticAlgorithm.CreateOptions(10, null, crossover, mutation) |> ignore)
@@ -207,25 +227,25 @@ let createOptionsTests =
 
               Expect.throwsT<ArgumentNullException>
                   (fun _ ->
-                      GeneticAlgorithm.CreateOptions(10, null, crossover, mutation, reinsertion, onGeneration)
+                      GeneticAlgorithm.CreateOptions(10, null, crossover, mutation, reinsertion, probe)
                       |> ignore)
                   "selection delegate should be required"
 
               Expect.throwsT<ArgumentNullException>
                   (fun _ ->
-                      GeneticAlgorithm.CreateOptions(10, selection, null, mutation, reinsertion, onGeneration)
+                      GeneticAlgorithm.CreateOptions(10, selection, null, mutation, reinsertion, probe)
                       |> ignore)
                   "crossover delegate should be required"
 
               Expect.throwsT<ArgumentNullException>
                   (fun _ ->
-                      GeneticAlgorithm.CreateOptions(10, selection, crossover, null, reinsertion, onGeneration)
+                      GeneticAlgorithm.CreateOptions(10, selection, crossover, null, reinsertion, probe)
                       |> ignore)
                   "mutation delegate should be required"
 
               Expect.throwsT<ArgumentNullException>
                   (fun _ ->
-                      GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, null, onGeneration)
+                      GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, null, probe)
                       |> ignore)
                   "reinsertion delegate should be required"
 
@@ -233,7 +253,7 @@ let createOptionsTests =
                   (fun _ ->
                       GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, reinsertion, null)
                       |> ignore)
-                  "onGeneration delegate should be required" ]
+                  "probe delegate should be required" ]
 
 [<Tests>]
 let createProblemTests =
@@ -286,6 +306,22 @@ let runTests =
               expectSolution (GeneticAlgorithm.Run(genotype, fitness, terminate, options))
               expectSolution (GeneticAlgorithm.Run(problem, 4))
               expectSolution (GeneticAlgorithm.Run(problem, options))
+
+          testCase "invokes a custom probe when given a populationSize and probe"
+          <| fun _ ->
+              let mutable observedGenerations = 0
+
+              let probe = Action<GenerationInfo<int>>(fun _ -> observedGenerations <- observedGenerations + 1)
+
+              expectSolution (GeneticAlgorithm.Run(genotype, fitness, terminate, 4, probe))
+
+              Expect.isTrue (observedGenerations > 0) "the probe should have been invoked at least once"
+
+          testCase "rejects a null probe"
+          <| fun _ ->
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ -> GeneticAlgorithm.Run(genotype, fitness, terminate, 4, null) |> ignore)
+                  "probe should be required"
 
           testCase "rejects null problems and options"
           <| fun _ ->
@@ -364,7 +400,7 @@ let compatibilityFacadeTests =
                   offspring
                   "reinsertion delegate creation should be forwarded"
 
-          testCase "forwards a custom onGeneration delegate"
+          testCase "forwards a custom probe delegate"
           <| fun _ ->
               let selection =
                   Func<Chromosome<int> array, int, Chromosome<int> array>(fun population count ->
@@ -382,18 +418,30 @@ let compatibilityFacadeTests =
                   )
 
               let mutable observedGeneration = -1
-              let onGeneration = Action<Chromosome<int>, int>(fun _ generation -> observedGeneration <- generation)
+              let probe = Action<GenerationInfo<int>>(fun info -> observedGeneration <- info.Generation)
 
               let result =
-                  Interop.CreateOptions(4, selection, crossover, mutation, reinsertion, onGeneration)
+                  Interop.CreateOptions(4, selection, crossover, mutation, reinsertion, probe)
 
-              result.OnGeneration (chromosome [| 1 |]) 5
+              let best = chromosome [| 1 |]
 
-              Expect.equal observedGeneration 5 "onGeneration delegate creation should be forwarded"
+              result.Probe
+                  { Generation = 5
+                    Population = [| best |]
+                    Best = best
+                    Temperature = 0.0 }
+
+              Expect.equal observedGeneration 5 "probe delegate creation should be forwarded"
 
           testCase "forwards every Run overload"
           <| fun _ ->
               expectSolution (Interop.Run(genotype, fitness, terminate, 4))
               expectSolution (Interop.Run(genotype, fitness, terminate, options))
               expectSolution (Interop.Run(problem, 4))
-              expectSolution (Interop.Run(problem, options)) ]
+              expectSolution (Interop.Run(problem, options))
+
+              let mutable observedGenerations = 0
+              let probe = Action<GenerationInfo<int>>(fun _ -> observedGenerations <- observedGenerations + 1)
+
+              expectSolution (Interop.Run(genotype, fitness, terminate, 4, probe))
+              Expect.isTrue (observedGenerations > 0) "the probe should have been invoked at least once" ]

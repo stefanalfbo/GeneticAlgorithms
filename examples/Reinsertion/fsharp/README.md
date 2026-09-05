@@ -42,7 +42,7 @@ let baseOptions: Options<int> =
 ## How It Works
 
 1. Run the OneMax-style problem for 300 generations, once with each reinsertion strategy plugged into `Options.ReinsertionFn` - everything else (population size, selection, crossover, mutation) stays identical across the three runs.
-2. Record the best fitness seen at every generation via `Options.OnGeneration`, so the three runs can be compared at matching points in time afterward.
+2. Record the best fitness seen at every generation via `Options.Probe`, so the three runs can be compared at matching points in time afterward.
 3. Print a table of best fitness at every 30th generation, side by side for all three strategies.
 4. Print each strategy's final fitness as a percentage of the maximum possible.
 

@@ -20,7 +20,7 @@ let private opts: Options<int> =
       MutationRate = 0.05
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.``pure``
-      OnGeneration = fun _ _ -> () }
+      Probe = fun _ -> () }
 
 [<Tests>]
 let eliteTests =

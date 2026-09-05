@@ -2,9 +2,6 @@ namespace GeneticAlgorithms
 
 module Genetic =
 
-    let printProgress (chromosome: Chromosome<'Gene>) (_generation: int) =
-        printfn "Current Best %f" chromosome.Fitness
-
     let evaluate (population: Chromosome<'Gene> array) (fitnessFunction: Chromosome<'Gene> -> float) =
         population
         |> Array.map (fun chromosome ->
@@ -43,7 +40,11 @@ module Genetic =
         let best = nextPopulation.[0]
         let newTemperature = 0.8 * (temperature + (best.Fitness - lastMaxFitness))
 
-        opts.OnGeneration best generation
+        opts.Probe
+            { Generation = generation
+              Population = nextPopulation
+              Best = best
+              Temperature = newTemperature }
 
         if problem.Terminate nextPopulation generation newTemperature then
             best

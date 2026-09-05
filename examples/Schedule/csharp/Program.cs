@@ -40,7 +40,8 @@ var solution = GeneticAlgorithm.Run(
         return credits > 18.0 ? -99999.0 : fitness;
     },
     terminate: (population, generation, temperature) => generation == 1000,
-    populationSize: 100);
+    populationSize: 100,
+    probe: Probes.printProgress);
 
 var selectedClasses = solution.Genes
     .Zip(classNames)

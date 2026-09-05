@@ -10,7 +10,8 @@ var solution = GeneticAlgorithm.Run(
     fitnessFunction: chromosome => Fitness(chromosome.Genes),
     terminate: (population, generation, temperature) =>
         population.Any(chromosome => chromosome.Fitness >= 1.0),
-    populationSize: 100);
+    populationSize: 100,
+    probe: Probes.printProgress);
 
 Console.WriteLine($"Best solution: {new string(solution.Genes)} (fitness: {solution.Fitness:F6})");
 

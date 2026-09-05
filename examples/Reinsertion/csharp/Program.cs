@@ -55,7 +55,7 @@ var strategies = new (string Name, Func<Chromosome<int>[], Chromosome<int>[], Ch
         crossoverFn: Crossover.singlePoint,
         mutationFn: Mutation.scramble,
         reinsertionFn: reinsertionFn,
-        onGeneration: (best, generation) => fitnessByGeneration[generation] = best.Fitness);
+        probe: info => fitnessByGeneration[info.Generation] = info.Best.Fitness);
 
     var solution = GeneticAlgorithm.Run(
         genotype: genotype,

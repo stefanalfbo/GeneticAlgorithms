@@ -22,6 +22,7 @@ var solution = GeneticAlgorithm.Run(
         return totalWeight > weightLimit ? 0.0 : totalProfit;
     },
     terminate: (population, generation, temperature) => generation >= 1000,
-    populationSize: 50);
+    populationSize: 50,
+    probe: Probes.printProgress);
 
 Console.WriteLine($"Best solution: [{string.Join("; ", solution.Genes)}] (fitness: {solution.Fitness:F6})");

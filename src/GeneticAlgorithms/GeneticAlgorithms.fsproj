@@ -19,11 +19,13 @@
 
   <ItemGroup>
     <Compile Include="Chromosome.fs" />
+    <Compile Include="GenerationInfo.fs" />
     <Compile Include="Problem.fs" />
     <Compile Include="Distance.fs" />
     <Compile Include="Crossover.fs" />
     <Compile Include="Mutation.fs" />
     <Compile Include="Reinsertion.fs" />
+    <Compile Include="Probes.fs" />
     <Compile Include="Options.fs" />
     <Compile Include="Selection.fs" />
     <Compile Include="Genetic.fs" />

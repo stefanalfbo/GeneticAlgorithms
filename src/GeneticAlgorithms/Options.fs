@@ -8,4 +8,4 @@ type Options<'Gene> =
       MutationRate: float
       MutationFn: Chromosome<'Gene> -> Chromosome<'Gene>
       ReinsertionFn: Chromosome<'Gene> array -> Chromosome<'Gene> array -> Chromosome<'Gene> array -> Chromosome<'Gene> array
-      OnGeneration: Chromosome<'Gene> -> int -> unit }
+      Probe: GenerationInfo<'Gene> -> unit }

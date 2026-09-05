@@ -7,7 +7,9 @@ var options = GeneticAlgorithm.CreateOptions<int>(
     populationSize: 100,
     selectionFn: Selection.elite,
     crossoverFn: Crossover.orderOneCrossover,
-    mutationFn: Mutation.scramble);
+    mutationFn: Mutation.scramble,
+    reinsertionFn: Reinsertion.pure,
+    probe: Probes.printProgress);
 
 var solution = GeneticAlgorithm.Run(
     genotype: () => GeneticAlgorithm.CreateChromosome(

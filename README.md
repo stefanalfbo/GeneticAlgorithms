@@ -84,16 +84,33 @@ type Options<'Gene> =
       CrossoverFn: Chromosome<'Gene> -> Chromosome<'Gene> -> Chromosome<'Gene> * Chromosome<'Gene>
       MutationRate: float
       MutationFn: Chromosome<'Gene> -> Chromosome<'Gene>
-      OnGeneration: Chromosome<'Gene> -> int -> unit }
+      ReinsertionFn: Chromosome<'Gene> array -> Chromosome<'Gene> array -> Chromosome<'Gene> array -> Chromosome<'Gene> array
+      Probe: GenerationInfo<'Gene> -> unit }
 ```
 
 `SelectionFn` picks from the `Selection` module (`Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, `Selection.rank`) or a custom function of the same shape.
 
 `CrossoverFn` picks from the `Crossover` module (`Crossover.singlePoint` for any gene array, or `Crossover.orderOneCrossover` for permutation genotypes such as `NQueens`) or a custom function of the same shape.
 
-`MutationFn` picks from the `Mutation` module (`Mutation.scramble`/`Mutation.scrambleSlice` for any gene array, `Mutation.flip`/`Mutation.flipEachGene` for binary genotypes, or `Mutation.gaussian` for real-valued genotypes) or a custom function of the same shape; `Genetic.mutation` decides per chromosome, via `MutationRate`, whether to apply it at all.
+`MutationFn` picks from the `Mutation` module (`Mutation.scramble`/`Mutation.scrambleSlice` for any gene array, `Mutation.flip`/`Mutation.flipEachGene` for binary genotypes, or `Mutation.gaussian` for real-valued genotypes) or a custom function of the same shape; `Genetic.mutation` decides, via `MutationRate`, how many chromosomes to sample from the population as mutants each generation.
 
-`OnGeneration` is called with the current generation's best chromosome after every evaluation, so callers decide whether and how to report progress - `Genetic.printProgress` is a ready-made implementation that prints the best fitness.
+`ReinsertionFn` picks from the `Reinsertion` module (`` Reinsertion.`pure` `` to replace the population outright with this generation's offspring, or `Reinsertion.elitist`/`Reinsertion.uniform` to carry over a fraction of the previous generation's fittest or randomly chosen survivors alongside it) or a custom function of the same shape - it decides how parents, offspring, and leftover chromosomes combine into the next population.
+
+`Probe` is called with a `GenerationInfo<'Gene>` snapshot after every evaluation. It's a generic injection point - the library only decides when it fires and what it carries; what a probe does with that snapshot (print it, collect it in memory, write it to a file or database, push it to a monitoring service) is entirely up to whoever plugs one in. The default is `Probes.noop` - probing is opt-in, not imposed. `Probes.printProgress` is a ready-made probe that prints the best fitness; `Probes.combine` runs several probes together, and `Probes.everyNth` throttles one to fire only every *n* generations.
+
+### `GenerationInfo<'Gene>`
+
+A snapshot of one generation's state, passed to `Options.Probe`.
+
+```fsharp
+type GenerationInfo<'Gene> =
+    { Generation: int
+      Population: Chromosome<'Gene> array
+      Best: Chromosome<'Gene>
+      Temperature: float }
+```
+
+`Population` is this generation's full population, already evaluated and sorted by descending fitness. `Best` is `Population.[0]`. `Temperature` is the same value passed to `Problem.Terminate` for this generation.
 
 ## Algorithm Flow
 
@@ -101,12 +118,13 @@ type Options<'Gene> =
 
 1. Initialize a population using the supplied genotype function.
 2. Evaluate all chromosomes with the fitness function and sort by descending fitness.
-3. Report progress via `OnGeneration`.
+3. Report progress via `Probe`.
 4. Stop if the termination function returns `true` for the current population, generation, and temperature.
 5. Otherwise, select parents using `SelectionFn` and `SelectionRate`, keeping any unselected chromosomes as leftover.
 6. Produce children from the selected parents using `CrossoverFn`.
-7. Combine children with the leftover chromosomes and apply `MutationFn` to each, with probability `MutationRate`.
-8. Repeat from step 2 with the resulting population.
+7. Sample a subset of the population, sized by `MutationRate`, and apply `MutationFn` to each to produce mutants.
+8. Combine the children and mutants into this generation's offspring, and let `ReinsertionFn` decide how parents, offspring, and leftover chromosomes combine into the next population.
+9. Repeat from step 2 with the resulting population.
 
 The termination callback receives the evaluated population, the current generation number, and a temperature value computed from recent fitness progress, so problems can stop either on solution quality, a generation cap, temperature behavior, or a combination of those signals.
 
@@ -163,7 +181,7 @@ let options =
       MutationRate = 0.05
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.``pure``
-      OnGeneration = Genetic.printProgress }
+      Probe = Probes.printProgress }
 
 let solution = Genetic.run problem options
 ```

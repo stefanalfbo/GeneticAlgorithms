@@ -13,7 +13,7 @@ let private opts: Options<int> =
       MutationRate = 0.05
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.``pure``
-      OnGeneration = fun _ _ -> () }
+      Probe = fun _ -> () }
 
 [<Tests>]
 let evaluateTests =
@@ -206,4 +206,52 @@ let runTests =
               Expect.sequenceEqual
                   roundedTemperatures
                   [ 7.2; 5.76; 4.608 ]
-                  "terminate should receive the computed temperature for each generation" ]
+                  "terminate should receive the computed temperature for each generation"
+
+          testCase "passes the full generation snapshot to the probe"
+          <| fun _ ->
+              let observedGenerations = System.Collections.Generic.List<int>()
+              let observedPopulationSizes = System.Collections.Generic.List<int>()
+              let observedBestFitnesses = System.Collections.Generic.List<float>()
+              let observedTemperatures = System.Collections.Generic.List<float>()
+
+              let genotype () = makeChromosome [| 9 |]
+
+              let problem =
+                  { Genotype = genotype
+                    FitnessFunction = fun c -> float c.Genes.[0]
+                    Terminate = fun _ generation _ -> generation >= 2 }
+
+              let probeOpts =
+                  { opts with
+                      Probe =
+                          fun info ->
+                              observedGenerations.Add info.Generation
+                              observedPopulationSizes.Add info.Population.Length
+                              observedBestFitnesses.Add info.Best.Fitness
+                              observedTemperatures.Add info.Temperature }
+
+              Genetic.run problem probeOpts |> ignore
+
+              Expect.sequenceEqual
+                  observedGenerations
+                  [ 0; 1; 2 ]
+                  "the probe should see each generation in order starting from zero"
+
+              Expect.all
+                  observedPopulationSizes
+                  ((=) probeOpts.PopulationSize)
+                  "the probe should see the full, unfiltered population every generation"
+
+              Expect.all
+                  observedBestFitnesses
+                  ((=) 9.0)
+                  "the probe should see the best chromosome's fitness"
+
+              let roundedTemperatures =
+                  observedTemperatures |> Seq.map (fun value -> System.Math.Round(value, 3)) |> Seq.toList
+
+              Expect.sequenceEqual
+                  roundedTemperatures
+                  [ 7.2; 5.76; 4.608 ]
+                  "the probe should see the same computed temperature terminate does" ]
