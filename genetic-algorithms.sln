@@ -49,6 +49,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TigerSimulation", "examples
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TigerSimulation.CSharp", "examples\TigerSimulation\csharp\TigerSimulation.CSharp.csproj", "{D1CFEE8B-EEFC-47DE-A5EC-3E3BD7EB9302}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TravelingSalesman", "examples\TravelingSalesman\fsharp\TravelingSalesman.fsproj", "{426EAC05-F594-4B3C-A0D5-989FF70C829B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -299,6 +301,18 @@ Global
 		{D1CFEE8B-EEFC-47DE-A5EC-3E3BD7EB9302}.Release|x64.Build.0 = Release|Any CPU
 		{D1CFEE8B-EEFC-47DE-A5EC-3E3BD7EB9302}.Release|x86.ActiveCfg = Release|Any CPU
 		{D1CFEE8B-EEFC-47DE-A5EC-3E3BD7EB9302}.Release|x86.Build.0 = Release|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Debug|x64.Build.0 = Debug|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Debug|x86.Build.0 = Debug|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Release|x64.ActiveCfg = Release|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Release|x64.Build.0 = Release|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Release|x86.ActiveCfg = Release|Any CPU
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -324,5 +338,6 @@ Global
 		{51ADDE65-7A94-4890-909C-6731BCFF5F08} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{948226CA-35B9-485E-9DC1-7060CC18EF58} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 		{D1CFEE8B-EEFC-47DE-A5EC-3E3BD7EB9302} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
+		{426EAC05-F594-4B3C-A0D5-989FF70C829B} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 	EndGlobalSection
 EndGlobal

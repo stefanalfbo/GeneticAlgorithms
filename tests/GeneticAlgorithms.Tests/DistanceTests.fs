@@ -66,3 +66,23 @@ let jaroSimilarityTests =
               let result = Distance.jaroSimilarity "MARTHA" "MARHTA" |> fun value -> System.Math.Round(value, 3)
 
               Expect.equal result 0.944 "should match the textbook Jaro similarity value" ]
+
+[<Tests>]
+let euclideanTests =
+    testList
+        "Distance.euclidean"
+        [ testCase "identical points have a distance of zero"
+          <| fun _ -> Expect.equal (Distance.euclidean (1.0, 2.0) (1.0, 2.0)) 0.0 "a point is zero distance from itself"
+
+          testCase "matches the well-known 3-4-5 right triangle"
+          <| fun _ -> Expect.equal (Distance.euclidean (0.0, 0.0) (3.0, 4.0)) 5.0 "should compute the hypotenuse exactly"
+
+          testCase "is symmetric"
+          <| fun _ ->
+              let left = 1.0, 2.0
+              let right = -3.5, 7.0
+
+              Expect.equal (Distance.euclidean left right) (Distance.euclidean right left) "distance should not depend on argument order"
+
+          testCase "works with negative coordinates"
+          <| fun _ -> Expect.equal (Distance.euclidean (-1.0, -1.0) (2.0, 3.0)) 5.0 "should measure distance regardless of sign" ]

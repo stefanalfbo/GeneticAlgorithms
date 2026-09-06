@@ -33,6 +33,8 @@ examples/
   TigerSimulation/
     csharp/
     fsharp/
+  TravelingSalesman/
+    fsharp/
 ```
 
 ## Available Examples
@@ -179,6 +181,16 @@ Run the C# version:
 
 ```powershell
 dotnet run --project examples/TigerSimulation/csharp
+```
+
+### TravelingSalesman
+
+A classic Traveling Salesman Problem instance: find the shortest closed tour through 12 cities, visiting each exactly once. Chromosomes are permutation-encoded, so this example uses `Crossover.orderOneCrossover` to keep offspring valid tours. Fitness is the negated total tour distance (`Distance.euclidean` summed around the loop), since the library always maximizes fitness but a tour's cost should be minimized.
+
+Run the F# version (this example has no C# variant):
+
+```powershell
+dotnet run --project examples/TravelingSalesman/fsharp
 ```
 
 ## Notes

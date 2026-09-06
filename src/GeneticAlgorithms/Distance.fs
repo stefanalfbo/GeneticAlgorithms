@@ -3,9 +3,10 @@ namespace GeneticAlgorithms
 open System
 
 /// <summary>
-/// Similarity and distance functions for comparing two strings, useful as building blocks
-/// for fitness functions that compare a candidate string against a target - for example,
-/// decoding a candidate key and scoring how close the result is to a known message.
+/// Similarity and distance functions, useful as building blocks for fitness functions that
+/// compare a candidate against a target or measure a cost to minimize - comparing a
+/// decoded candidate string against a known message, for example, or scoring a tour by the
+/// distance it covers.
 /// </summary>
 module Distance =
 
@@ -105,3 +106,14 @@ module Distance =
                  + matches / float right.Length
                  + (matches - float transpositions) / matches)
                 / 3.0
+
+    /// <summary>
+    /// Computes the Euclidean (straight-line) distance between two points in the plane.
+    /// </summary>
+    /// <param name="left">The first point, as an (x, y) coordinate pair.</param>
+    /// <param name="right">The second point, as an (x, y) coordinate pair.</param>
+    /// <returns>The straight-line distance between the two points.</returns>
+    let euclidean (left: float * float) (right: float * float) =
+        let x1, y1 = left
+        let x2, y2 = right
+        sqrt ((x2 - x1) ** 2.0 + (y2 - y1) ** 2.0)
