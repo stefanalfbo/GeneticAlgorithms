@@ -153,9 +153,11 @@ coverage*.json
 coverage*.xml
 coverage*.info
 
-# Per-generation statistics written by the TigerSimulation example
-examples/TigerSimulation/fsharp/tropical_stats.csv
-examples/TigerSimulation/fsharp/tundra_stats.csv
+# Per-generation statistics written by the TigerSimulation example - unanchored (no
+# leading path) since `dotnet run`'s working directory depends on how it's invoked, so
+# these can land anywhere in the tree, not just next to Program.fs
+tropical_stats.csv
+tundra_stats.csv
 
 # Visual Studio code coverage results
 *.coverage
