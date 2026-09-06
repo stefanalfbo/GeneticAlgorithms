@@ -19,14 +19,23 @@ let problem: Problem<int> =
       FitnessFunction = fitness_function
       Terminate = terminate }
 
+// SelectionRate leaves 20% of the population as leftover each generation; elitist
+// reinsertion carries the fittest 15% of (parents + leftover) forward alongside this
+// generation's offspring, so 0.8 + 0.05 (MutationRate) + 0.15 keeps the population size
+// roughly stable across however many generations it takes to converge. The simpler
+// `pure` reinsertion strategy, at the library's default SelectionRate of 1.0, lets the
+// population grow without bound every generation instead - fine for a handful of
+// generations, but this problem's 1000-gene chromosome can take long enough to reach the
+// target that the growth compounds into a population far too large to finish in any
+// reasonable time.
 let options =
     { PopulationSize = 100
-      SelectionRate = 1.0
+      SelectionRate = 0.8
       SelectionFn = Selection.elite
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       MutationFn = Mutation.scramble
-      ReinsertionFn = Reinsertion.``pure``
+      ReinsertionFn = Reinsertion.elitist 0.15
       Probe = Probes.printProgress }
 
 let solution = Genetic.run problem options
