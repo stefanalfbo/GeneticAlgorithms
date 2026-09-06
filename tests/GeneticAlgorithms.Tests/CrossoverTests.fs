@@ -74,6 +74,63 @@ let multiPointTests =
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
 
 [<Tests>]
+let messySinglePointTests =
+    testList
+        "Crossover.messySinglePoint"
+        [ testCase "each child is a prefix of one parent followed by a suffix of the other"
+          <| fun _ ->
+              // p1 is all 1s and p2 is all 2s, so regardless of where each parent's
+              // independent cut point lands, the first child must be some number of 1s
+              // (from p1's head) followed by some number of 2s (from p2's tail) - never
+              // decreasing. The second child is the mirror image - p2's head (2s)
+              // followed by p1's tail (1s) - never increasing.
+              let p1 = makeChromosome (Array.create 8 1)
+              let p2 = makeChromosome (Array.create 8 2)
+
+              for _ in 1..100 do
+                  let c1, c2 = Crossover.messySinglePoint p1 p2
+
+                  let isSorted comparer (genes: int array) =
+                      genes |> Array.pairwise |> Array.forall comparer
+
+                  Expect.isTrue (isSorted (fun (a, b) -> a <= b) c1.Genes) "first child should be 1s followed by 2s, never decreasing"
+                  Expect.isTrue (isSorted (fun (a, b) -> a >= b) c2.Genes) "second child should be 2s followed by 1s, never increasing"
+                  Expect.contains c1.Genes 1 "first child should contain at least one gene from p1's head"
+                  Expect.contains c1.Genes 2 "first child should contain at least one gene from p2's tail"
+
+          testCase "children's lengths can differ from the parents' length"
+          <| fun _ ->
+              // Cut points are chosen independently in each parent, each uniform over
+              // 1..7 for an 8-gene chromosome. The original length (8) is only reproduced
+              // when both cut points happen to be equal, so across 100 independent trials
+              // the odds of *never* seeing a different length are astronomically small
+              // (roughly (1/7)^100) - not literally deterministic, but as close to it as a
+              // randomized test gets.
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+
+              let lengths =
+                  [ for _ in 1..100 ->
+                        let c1, c2 = Crossover.messySinglePoint p1 p2
+                        c1.Genes.Length, c2.Genes.Length ]
+
+              Expect.isTrue
+                  (lengths |> List.exists (fun (l1, l2) -> l1 <> p1.Genes.Length || l2 <> p2.Genes.Length))
+                  "at least one trial should produce a child whose length differs from the original parent length"
+
+          testCase "does not mutate the parent chromosomes"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+              let p1GenesBefore = Array.copy p1.Genes
+              let p2GenesBefore = Array.copy p2.Genes
+
+              Crossover.messySinglePoint p1 p2 |> ignore
+
+              Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+
+[<Tests>]
 let orderOneCrossoverTests =
     testList
         "Crossover.orderOneCrossover"

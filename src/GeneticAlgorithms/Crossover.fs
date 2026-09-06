@@ -19,7 +19,10 @@ namespace GeneticAlgorithms
 /// position in whichever parent contributed it.
 /// <c>wholeArithmeticCrossover</c> is different again: it only works for real-valued
 /// (<c>float</c>) genotypes, since it blends parent genes arithmetically instead of
-/// swapping or copying them outright.
+/// swapping or copying them outright. Every strategy above preserves each parent's
+/// <c>Genes</c> length in its children; <c>messySinglePoint</c> is the exception - it's a
+/// variant of <c>singlePoint</c> built specifically to let a child's length differ from
+/// either parent's.
 /// </remarks>
 module Crossover =
 
@@ -53,6 +56,43 @@ module Crossover =
             Genes = Array.append parent1Head parent2Tail },
         { p2 with
             Genes = Array.append parent2Head parent1Tail }
+
+    /// <summary>
+    /// Combines two parents into two children like <c>singlePoint</c>, but picks the cut
+    /// point independently in each parent rather than sharing one - so unlike every other
+    /// strategy in this module, this one does not preserve chromosome length.
+    /// </summary>
+    /// <remarks>
+    /// The first child is <paramref name="p1"/>'s head (up to its own cut point) followed
+    /// by <paramref name="p2"/>'s tail (from its own, independently chosen cut point); the
+    /// second child is the reverse. Because the two cut points are chosen independently, a
+    /// child's length is <c>(one parent's cut point) + (the other parent's length - that
+    /// parent's cut point)</c>, which need not equal either original parent's length - and
+    /// the two children need not be the same length as each other either. This is the
+    /// defining property of "messy" crossover: unlike <c>singlePoint</c>,
+    /// <c>multiPoint</c>, or <c>uniform</c>, a child's length here is an output of the
+    /// operation, not an invariant it preserves.
+    ///
+    /// Works for any gene array, but does not preserve permutations - if the parents are
+    /// permutations of the same values (as in <c>NQueens</c>), the children generally
+    /// won't be, and generally won't even be the same length as the permutation itself.
+    /// Use <c>orderOneCrossover</c> or <c>cycleCrossover</c> for permutation genotypes
+    /// instead.
+    /// </remarks>
+    /// <param name="p1">The first parent.</param>
+    /// <param name="p2">The second parent.</param>
+    /// <returns>
+    /// Two children built from independently chosen cut points in each parent - their
+    /// lengths may differ from the parents' and from each other.
+    /// </returns>
+    let messySinglePoint (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        let cut1 = System.Random.Shared.Next(1, p1.Genes.Length)
+        let cut2 = System.Random.Shared.Next(1, p2.Genes.Length)
+
+        let c1Genes = Array.append p1.Genes.[0 .. cut1 - 1] p2.Genes.[cut2 ..]
+        let c2Genes = Array.append p2.Genes.[0 .. cut2 - 1] p1.Genes.[cut1 ..]
+
+        { p1 with Genes = c1Genes }, { p2 with Genes = c2Genes }
 
     /// <summary>
     /// Combines two parents into two children by picking <paramref name="pointCount"/>
