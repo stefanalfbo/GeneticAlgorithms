@@ -13,7 +13,11 @@ namespace GeneticAlgorithms
 /// (<c>Chromosome&lt;int&gt;</c> with genes of <c>0</c> or <c>1</c>), so unlike
 /// <c>scramble</c> they work on <c>int</c> specifically rather than any <c>'Gene</c> type.
 /// <c>gaussian</c> is the real-valued counterpart: it only makes sense for
-/// <c>Chromosome&lt;float&gt;</c>.
+/// <c>Chromosome&lt;float&gt;</c>. <c>scramble</c> and <c>scrambleSlice</c> can only
+/// rearrange gene values that already exist somewhere in the chromosome; if selection
+/// drives a needed value to extinction across the entire population, no amount of
+/// reordering can bring it back. <c>randomReset</c> is the general-purpose strategy that
+/// can, by replacing genes with freshly generated values instead of just reordering them.
 /// </remarks>
 module Mutation =
 
@@ -104,6 +108,37 @@ module Mutation =
             Genes =
                 chromosome.Genes
                 |> Array.map (fun gene -> if System.Random.Shared.NextDouble() < rate then gene ^^^ 1 else gene) }
+
+    /// <summary>
+    /// Mutates a chromosome by replacing each gene, independently with probability
+    /// <paramref name="rate"/>, with a freshly generated value from
+    /// <paramref name="generator"/>.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <c>scramble</c> and <c>scrambleSlice</c>, which only reorder a chromosome's
+    /// existing genes, this can introduce a gene value that was never present in the
+    /// chromosome - or anywhere in the population - to begin with. That makes it the only
+    /// strategy in this module able to recover an allele that selection has driven to
+    /// extinction across the whole population; scramble-based strategies can never do
+    /// this, no matter how many generations run, since they only rearrange values that
+    /// already exist. A <paramref name="generator"/> is required because, unlike
+    /// <c>flip</c>/<c>flipEachGene</c> (fixed to <c>0</c>/<c>1</c>) or <c>gaussian</c>
+    /// (fitted to the chromosome's own genes), there is no way to synthesize a fresh value
+    /// for an arbitrary <c>'Gene</c> without the caller supplying how to produce one - it
+    /// should match whatever the genotype's own generator uses, so replaced genes stay
+    /// within the same domain. Curry both arguments (e.g.
+    /// <c>Mutation.randomReset 0.1 randomChar</c>) to use this as an
+    /// <c>Options&lt;'Gene&gt;.MutationFn</c>.
+    /// </remarks>
+    /// <param name="rate">The probability, per gene, that it gets replaced.</param>
+    /// <param name="generator">Produces a fresh, random gene value.</param>
+    /// <param name="chromosome">The chromosome to mutate.</param>
+    /// <returns>A new chromosome with each gene independently replaced or left as-is.</returns>
+    let randomReset (rate: float) (generator: unit -> 'Gene) (chromosome: Chromosome<'Gene>) =
+        { chromosome with
+            Genes =
+                chromosome.Genes
+                |> Array.map (fun gene -> if System.Random.Shared.NextDouble() < rate then generator () else gene) }
 
     /// Draws a random sample from a normal distribution with the given mean and variance,
     /// via the Box-Muller transform. .NET's <c>System.Random</c> only generates uniform

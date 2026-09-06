@@ -1,6 +1,15 @@
 using GeneticAlgorithms;
+using Microsoft.FSharp.Core;
 
 const string target = "helloworld";
+
+var options = GeneticAlgorithm.CreateOptions<char>(
+    populationSize: 100,
+    selectionFn: Selection.elite,
+    crossoverFn: Crossover.singlePoint,
+    mutationFn: chromosome => Mutation.randomReset(0.1, FuncConvert.FromFunc(RandomChar), chromosome),
+    reinsertionFn: (parents, offspring, leftover) => Reinsertion.elitist(0.15, parents, offspring, leftover),
+    probe: Probes.printProgress);
 
 var solution = GeneticAlgorithm.Run(
     genotype: () => GeneticAlgorithm.CreateChromosome(
@@ -10,8 +19,7 @@ var solution = GeneticAlgorithm.Run(
     fitnessFunction: chromosome => Fitness(chromosome.Genes),
     terminate: (population, generation, temperature) =>
         population.Any(chromosome => chromosome.Fitness >= 1.0),
-    populationSize: 100,
-    probe: Probes.printProgress);
+    options: options);
 
 Console.WriteLine($"Best solution: {new string(solution.Genes)} (fitness: {solution.Fitness:F6})");
 

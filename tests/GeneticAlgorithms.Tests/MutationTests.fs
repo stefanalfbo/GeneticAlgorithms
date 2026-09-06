@@ -221,6 +221,76 @@ let flipEachGeneTests =
               Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
 
 [<Tests>]
+let randomResetTests =
+    testList
+        "Mutation.randomReset"
+        [ testCase "at rate 1.0, replaces every gene with a freshly generated value"
+          <| fun _ ->
+              // NextDouble() never returns 1.0, so "< 1.0" is always true - fully
+              // deterministic, not just overwhelmingly likely.
+              let chromosome = makeChromosome [| 0; 1; 2; 3; 4 |]
+
+              let result = Mutation.randomReset 1.0 (fun () -> 99) chromosome
+
+              Expect.equal result.Genes [| 99; 99; 99; 99; 99 |] "every gene should be replaced"
+
+          testCase "at rate 0.0, leaves every gene unchanged"
+          <| fun _ ->
+              // NextDouble() never returns a negative value, so "< 0.0" is always false -
+              // fully deterministic, not just overwhelmingly likely.
+              let chromosome = makeChromosome [| 0; 1; 2; 3; 4 |]
+
+              let result = Mutation.randomReset 0.0 (fun () -> 99) chromosome
+
+              Expect.equal result.Genes chromosome.Genes "no gene should be replaced"
+
+          testCase "preserves the number of genes"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0; 1; 2; 3; 4 |]
+
+              let result = Mutation.randomReset 0.5 (fun () -> 99) chromosome
+
+              Expect.equal result.Genes.Length chromosome.Genes.Length "gene count should be preserved"
+
+          testCase "can introduce a gene value that was never in the original chromosome"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0; 1; 2; 3; 4 |]
+
+              let result = Mutation.randomReset 1.0 (fun () -> 99) chromosome
+
+              Expect.isTrue (result.Genes |> Array.forall (fun gene -> gene = 99)) "every gene should be the freshly generated value, absent from the original"
+
+          testCase "each gene is either unchanged or replaced by the generator"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0; 1; 2; 3; 4 |]
+
+              for _ in 1..100 do
+                  let result = Mutation.randomReset 0.5 (fun () -> 99) chromosome
+
+                  for i in 0 .. chromosome.Genes.Length - 1 do
+                      Expect.isTrue
+                          (result.Genes.[i] = chromosome.Genes.[i] || result.Genes.[i] = 99)
+                          "each gene should either be unchanged or replaced"
+
+          testCase "leaves fitness and age unchanged"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0; 1; 2; 3; 4 |]
+
+              let result = Mutation.randomReset 0.5 (fun () -> 99) chromosome
+
+              Expect.equal result.Fitness chromosome.Fitness "fitness should be unchanged"
+              Expect.equal result.Age chromosome.Age "age should be unchanged"
+
+          testCase "does not mutate the original chromosome"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0; 1; 2; 3; 4 |]
+              let genesBefore = Array.copy chromosome.Genes
+
+              Mutation.randomReset 0.5 (fun () -> 99) chromosome |> ignore
+
+              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
+
+[<Tests>]
 let gaussianTests =
     testList
         "Mutation.gaussian"

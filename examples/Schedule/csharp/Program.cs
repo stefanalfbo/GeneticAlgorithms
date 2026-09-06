@@ -19,6 +19,14 @@ var difficulties = new[] { 8.0, 9.0, 4.0, 3.0, 5.0, 2.0, 4.0, 2.0, 6.0, 1.0 };
 var usefulness = new[] { 8.0, 9.0, 6.0, 2.0, 8.0, 9.0, 1.0, 2.0, 5.0, 1.0 };
 var interest = new[] { 8.0, 8.0, 5.0, 9.0, 7.0, 2.0, 8.0, 2.0, 7.0, 10.0 };
 
+var options = GeneticAlgorithm.CreateOptions<int>(
+    populationSize: 100,
+    selectionFn: Selection.elite,
+    crossoverFn: Crossover.singlePoint,
+    mutationFn: Mutation.scramble,
+    reinsertionFn: (parents, offspring, leftover) => Reinsertion.elitist(0.15, parents, offspring, leftover),
+    probe: Probes.printProgress);
+
 var solution = GeneticAlgorithm.Run(
     genotype: () => GeneticAlgorithm.CreateChromosome(
         Enumerable.Range(0, classNames.Length)
@@ -40,8 +48,7 @@ var solution = GeneticAlgorithm.Run(
         return credits > 18.0 ? -99999.0 : fitness;
     },
     terminate: (population, generation, temperature) => generation == 1000,
-    populationSize: 100,
-    probe: Probes.printProgress);
+    options: options);
 
 var selectedClasses = solution.Genes
     .Zip(classNames)

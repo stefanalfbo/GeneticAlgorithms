@@ -35,7 +35,7 @@ let options =
       SelectionFn = Selection.elite
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
-      MutationFn = Mutation.scramble
+      MutationFn = Mutation.randomReset 0.1 randomChar
       ReinsertionFn = Reinsertion.``pure``
       Probe = Probes.printProgress }
 
