@@ -31,6 +31,7 @@ examples/
     csharp/
     fsharp/
   TigerSimulation/
+    csharp/
     fsharp/
 ```
 
@@ -168,10 +169,16 @@ dotnet run --project examples/Reinsertion/csharp
 
 A tiger-evolution simulation comparing the same 8-trait genotype under two different environments (tropical and tundra) over 1000 generations. Demonstrates building a custom probe with `Probes.combine`/`Probes.everyNth` to track mean fitness and mean age across a whole population, not just the single fittest chromosome - the per-generation history is written to CSV for further analysis.
 
-Run the F# version (this example has no C# variant):
+Run the F# version:
 
 ```powershell
 dotnet run --project examples/TigerSimulation/fsharp
+```
+
+Run the C# version:
+
+```powershell
+dotnet run --project examples/TigerSimulation/csharp
 ```
 
 ## Notes
