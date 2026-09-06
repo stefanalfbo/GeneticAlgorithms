@@ -153,6 +153,10 @@ coverage*.json
 coverage*.xml
 coverage*.info
 
+# Per-generation statistics written by the TigerSimulation example
+examples/TigerSimulation/fsharp/tropical_stats.csv
+examples/TigerSimulation/fsharp/tundra_stats.csv
+
 # Visual Studio code coverage results
 *.coverage
 *.coveragexml
