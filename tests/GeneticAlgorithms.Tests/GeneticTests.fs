@@ -254,4 +254,56 @@ let runTests =
               Expect.sequenceEqual
                   roundedTemperatures
                   [ 7.2; 5.76; 4.608 ]
-                  "the probe should see the same computed temperature terminate does" ]
+                  "the probe should see the same computed temperature terminate does"
+
+          testCase "regression: reinsertion accounting stays correct for a generation with a SelectionFn that permits duplicates"
+          <| fun _ ->
+              // End-to-end regression test: with SelectionRate 0.8 + MutationRate 0.05 +
+              // Reinsertion.elitist's survivalRate 0.15 summing to 1.0, population size is
+              // meant to stay stable from one generation to the next. That arithmetic relies
+              // on Selection.select reporting distinct parents, not raw (possibly duplicated)
+              // selections, when it hands off to ReinsertionFn - otherwise Selection.roulette
+              // (which can legitimately select the same chromosome more than once, just like
+              // tournament/boltzmann/stochasticUniversalSampling) would inflate "old"
+              // survivors and grow the population whenever that happens.
+              //
+              // This only checks a single generation transition (0 -> 1), not population
+              // stability over many generations: elitist reinsertion is specifically
+              // designed to carry the fittest chromosomes forward unchanged, so over enough
+              // generations the population will end up genuinely holding more than one
+              // structurally-identical copy of the same chromosome. Once that happens,
+              // Seq.except (a value-based set difference) can no longer distinguish "the one
+              // copy that was selected" from "the other copies that weren't", and starts
+              // excluding all of them from leftover - a separate, pre-existing limitation of
+              // comparing chromosomes by value rather than identity, not something this fix
+              // addresses. Genes are wide-range random values (not a small counter)
+              // specifically so this single generation doesn't hit that separate issue by
+              // coincidence.
+              let genotype () =
+                  makeChromosome (Array.init 10 (fun _ -> System.Random.Shared.Next(0, 1_000_000)))
+
+              let observedPopulationSizes = System.Collections.Generic.List<int>()
+
+              let problem =
+                  { Genotype = genotype
+                    FitnessFunction = fun c -> c.Genes |> Array.sumBy float
+                    Terminate = fun _ generation _ -> generation >= 1 }
+
+              // PopulationSize = 20 keeps every intermediate count (0.8/0.05/0.15 of 20)
+              // an exact integer - population.Length - population.Length%2, MutationRate,
+              // and the elitist survivalRate all divide evenly, so nothing here is masked
+              // or caused by ordinary floor-rounding of fractional counts elsewhere in the
+              // pipeline.
+              let duplicateSelectionOpts =
+                  { opts with
+                      PopulationSize = 20
+                      SelectionFn = Selection.roulette
+                      ReinsertionFn = Reinsertion.elitist 0.15
+                      Probe = fun info -> observedPopulationSizes.Add info.Population.Length }
+
+              Genetic.run problem duplicateSelectionOpts |> ignore
+
+              Expect.all
+                  observedPopulationSizes
+                  ((=) duplicateSelectionOpts.PopulationSize)
+                  "population size should stay stable across this generation, even though roulette selection can pick the same chromosome more than once" ]

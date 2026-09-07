@@ -255,16 +255,18 @@ let selectTests =
         "Selection.select"
         [ testCase "splits the population into parent pairs and leftover using selection_rate"
           <| fun _ ->
-              let parentPairs, leftover = Selection.select { opts with SelectionRate = 0.5 } population
+              let parentPairs, parents, leftover = Selection.select { opts with SelectionRate = 0.5 } population
 
               Expect.equal parentPairs.Length 1 "half the population should be paired up"
+              Expect.equal parents.Length 2 "both paired chromosomes should be reported as parents"
               Expect.equal leftover.Length 2 "the rest should be left over"
 
           testCase "rounds an odd selection count up to the next even number"
           <| fun _ ->
-              let parentPairs, leftover = Selection.select { opts with SelectionRate = 0.75 } population
+              let parentPairs, parents, leftover = Selection.select { opts with SelectionRate = 0.75 } population
 
               Expect.equal parentPairs.Length 2 "the selection count should be rounded up to stay even"
+              Expect.equal parents.Length 4 "every selected chromosome should be reported as a parent"
               Expect.equal leftover.Length 0 "no chromosomes should be left over"
 
           testCase "clamps the selection count so rounding up never exceeds an odd population"
@@ -274,8 +276,41 @@ let selectTests =
               // number that still fits), leaving the fifth chromosome as leftover.
               let oddPopulation = Array.append population [| makeChromosome 0.5 |]
 
-              let parentPairs, leftover =
+              let parentPairs, parents, leftover =
                   Selection.select { opts with SelectionRate = 1.0 } oddPopulation
 
               Expect.equal parentPairs.Length 2 "selection count should be clamped to 4 (2 pairs)"
-              Expect.equal leftover.Length 1 "the chromosome that didn't fit should be left over" ]
+              Expect.equal parents.Length 4 "every selected chromosome should be reported as a parent"
+              Expect.equal leftover.Length 1 "the chromosome that didn't fit should be left over"
+
+          testCase "regression: parents and leftover add up to the population size even when SelectionFn permits duplicates"
+          <| fun _ ->
+              // Bug: tournament/roulette/boltzmann/stochasticUniversalSampling can legitimately
+              // select the same chromosome more than once (e.g. [A; A] out of [A; B; C; D]).
+              // leftover is computed as a set difference, so it correctly drops to one fewer
+              // element per distinct chromosome selected - but the raw, possibly-duplicated
+              // selection has more elements than there are distinct chromosomes behind it. If
+              // that raw array were used as "parents" for reinsertion accounting,
+              // parents.Length + leftover.Length would exceed population.Length (2 + 3 = 5 for
+              // a population of 4), which breaks Reinsertion.elitist/uniform's documented
+              // invariant that the two add back up to the previous population's size - a
+              // chromosome selected as a parent twice would then also count twice toward "old"
+              // survivors, silently growing the population every generation it happens.
+              let alwaysSameTwice =
+                  fun (pop: Chromosome<int> array) (n: int) -> Array.create n pop.[0]
+
+              let duplicateSelectionOpts =
+                  { opts with
+                      SelectionRate = 0.5
+                      SelectionFn = alwaysSameTwice }
+
+              let parentPairs, parents, leftover = Selection.select duplicateSelectionOpts population
+
+              Expect.equal parentPairs.Length 1 "should still form one pair for crossover"
+              Expect.equal parentPairs.[0] (population.[0], population.[0]) "the pair should use the duplicated selection"
+              Expect.equal parents.Length 1 "duplicate selections of the same chromosome should count once"
+              Expect.equal leftover.Length 3 "the rest of the population should be left over"
+              Expect.equal
+                  (parents.Length + leftover.Length)
+                  population.Length
+                  "parents and leftover should add back up to the population size, even with duplicate selections" ]

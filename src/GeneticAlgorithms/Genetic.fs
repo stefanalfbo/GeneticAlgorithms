@@ -49,10 +49,9 @@ module Genetic =
         if problem.Terminate nextPopulation generation newTemperature then
             best
         else
-            let parentPairs, leftover = Selection.select opts nextPopulation
+            let parentPairs, parents, leftover = Selection.select opts nextPopulation
             let children = crossover opts.CrossoverFn parentPairs
             let mutants = mutation opts nextPopulation
-            let parents = parentPairs |> Array.collect (fun (p1, p2) -> [| p1; p2 |])
 
             opts.ReinsertionFn parents (Array.append children mutants) leftover
             |> evolve opts problem (generation + 1) best.Fitness newTemperature

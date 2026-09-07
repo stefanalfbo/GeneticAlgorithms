@@ -227,10 +227,11 @@ module Selection =
         Array.init n (fun _ -> pickWeighted ranked weights)
 
     /// <summary>
-    /// Splits <paramref name="population"/> into parent pairs and leftover chromosomes for
-    /// one generation: selects <c>SelectionRate * population.Length</c> chromosomes
-    /// (rounded up to an even number) using <c>opts.SelectionFn</c>, pairs them up, and
-    /// returns whatever wasn't selected as leftover.
+    /// Splits <paramref name="population"/> into parent pairs, the distinct chromosomes used
+    /// as parents, and leftover chromosomes for one generation: selects
+    /// <c>SelectionRate * population.Length</c> chromosomes (rounded up to an even number)
+    /// using <c>opts.SelectionFn</c>, pairs them up, and returns whatever wasn't selected as
+    /// leftover.
     /// </summary>
     /// <remarks>
     /// The rounded-up count is capped at the largest even number that doesn't exceed
@@ -238,12 +239,27 @@ module Selection =
     /// (or population sizes that make rounding land above the population itself) would ask
     /// <c>opts.SelectionFn</c> for more chromosomes than exist, which fails for
     /// implementations like <c>elite</c> that take a fixed slice.
+    ///
+    /// Several <c>SelectionFn</c> implementations (<c>tournament</c>, <c>roulette</c>,
+    /// <c>boltzmann</c>, <c>stochasticUniversalSampling</c>) can legitimately select the same
+    /// chromosome more than once - the same individual pairing with two different partners
+    /// is a normal, intentional part of tournament/fitness-proportionate selection. The
+    /// second element of the returned tuple is deduplicated specifically so that
+    /// <c>Reinsertion</c> strategies which combine it with <paramref name="population"/>'s
+    /// leftover (e.g. <c>elitist</c>, <c>uniform</c>) can rely on the two adding back up to
+    /// <paramref name="population"/>'s size, regardless of duplicate selections - one
+    /// physical individual selected twice as a parent is still only one individual, not two,
+    /// once selection is done and it's time to decide who survives into the next
+    /// generation. <c>parentPairs</c> (the first element) is built from the raw, possibly-
+    /// duplicated selection instead, since crossover pairing is exactly where a repeated
+    /// individual is meant to participate more than once.
     /// </remarks>
     /// <param name="opts">Provides <c>SelectionRate</c> and <c>SelectionFn</c>.</param>
     /// <param name="population">The population to select parents from.</param>
     /// <returns>
-    /// A tuple of parent pairs to crossover, and the leftover chromosomes that carry over
-    /// to the next generation unchanged (aside from mutation).
+    /// A tuple of parent pairs to crossover, the distinct chromosomes selected as parents,
+    /// and the leftover chromosomes that carry over to the next generation unchanged (aside
+    /// from mutation).
     /// </returns>
     let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
         let maxN = population.Length - (population.Length % 2)
@@ -251,15 +267,16 @@ module Selection =
         let n = if n % 2 = 0 then n else n + 1
         let n = min n maxN
 
-        let parents = opts.SelectionFn population n
-        let leftover = population |> Seq.except parents |> Seq.toArray
+        let selected = opts.SelectionFn population n
+        let distinctParents = selected |> Array.distinct
+        let leftover = population |> Seq.except distinctParents |> Seq.toArray
 
         let parentPairs =
-            parents
+            selected
             |> Array.chunkBySize 2
             |> Array.map (fun chunk ->
                 match chunk with
                 | [| a; b |] -> a, b
                 | _ -> failwith "Invalid chunk size")
 
-        parentPairs, leftover
+        parentPairs, distinctParents, leftover

@@ -232,7 +232,7 @@ The test project verifies the main building blocks of the algorithm:
 * `Genetic.run` returns the fittest chromosome when termination is reached
 * `Genetic.run` forwards generation and temperature values to the termination callback
 * `Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, and `Selection.rank` each return the requested number of chromosomes under their respective selection rules
-* `Selection.select` splits a population into parent pairs and leftover chromosomes according to `SelectionRate`, rounding odd counts up to stay even
+* `Selection.select` splits a population into parent pairs, the distinct chromosomes selected as parents, and leftover chromosomes according to `SelectionRate`, rounding odd counts up to stay even - parents are deduplicated so they add back up to the population size alongside leftover, even when `SelectionFn` selects the same chromosome more than once (as `tournament`, `roulette`, `boltzmann`, and `stochasticUniversalSampling` can)
 * `Crossover.orderOneCrossover` always produces children that are valid permutations of the parents' genes, with no duplicate or missing values
 * `Mutation.scramble` and `Mutation.scrambleSlice` preserve the exact multiset of gene values (and, for `scrambleSlice`, the overall chromosome length), only reordering them
 * `Mutation.flip` flips every gene, and `Mutation.flipEachGene` flips each gene independently at its own probability
