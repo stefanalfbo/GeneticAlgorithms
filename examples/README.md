@@ -24,6 +24,9 @@ examples/
   OneMaxProblem/
     csharp/
     fsharp/
+  Rastrigin/
+    csharp/
+    fsharp/
   Reinsertion/
     csharp/
     fsharp/
@@ -181,6 +184,22 @@ Run the C# version:
 
 ```powershell
 dotnet run --project examples/TigerSimulation/csharp
+```
+
+### Rastrigin
+
+A continuous (real-valued) optimization example that minimizes the classic Rastrigin function - a highly multimodal benchmark with a lattice of local minima surrounding the global minimum of `0`. Chromosomes are real-valued (`Chromosome<float>`), so this example uses `Crossover.wholeArithmeticCrossover` (blends genes as a weighted average of both parents) and `Mutation.gaussian` (resamples genes from a distribution fitted to the chromosome's own genes) instead of the discrete-genotype defaults. Fitness is the negated Rastrigin value, since the library always maximizes fitness but the function should be minimized.
+
+Run the F# version:
+
+```powershell
+dotnet run --project examples/Rastrigin/fsharp
+```
+
+Run the C# version:
+
+```powershell
+dotnet run --project examples/Rastrigin/csharp
 ```
 
 ### TravelingSalesman

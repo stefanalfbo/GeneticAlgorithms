@@ -110,6 +110,40 @@ type GeneticAlgorithm =
           ReinsertionFn = fun parents offspring leftover -> reinsertionFn.Invoke(parents, offspring, leftover)
           Probe = fun info -> probe.Invoke(info) }
 
+    static member CreateOptions<'Gene>
+        (
+            populationSize: int,
+            selectionFn: Func<Chromosome<'Gene> array, int, Chromosome<'Gene> array>,
+            crossoverFn: Func<Chromosome<'Gene>, Chromosome<'Gene>, Chromosome<'Gene> * Chromosome<'Gene>>,
+            mutationFn: Func<Chromosome<'Gene>, Chromosome<'Gene>>,
+            mutationRate: float,
+            reinsertionFn: Func<Chromosome<'Gene> array, Chromosome<'Gene> array, Chromosome<'Gene> array, Chromosome<'Gene> array>,
+            probe: Action<GenerationInfo<'Gene>>
+        ) : Options<'Gene> =
+        if isNull selectionFn then
+            nullArg "selectionFn"
+
+        if isNull crossoverFn then
+            nullArg "crossoverFn"
+
+        if isNull mutationFn then
+            nullArg "mutationFn"
+
+        if isNull reinsertionFn then
+            nullArg "reinsertionFn"
+
+        if isNull probe then
+            nullArg "probe"
+
+        { PopulationSize = populationSize
+          SelectionRate = 0.8
+          SelectionFn = fun population n -> selectionFn.Invoke(population, n)
+          CrossoverFn = fun p1 p2 -> crossoverFn.Invoke(p1, p2)
+          MutationRate = mutationRate
+          MutationFn = fun chromosome -> mutationFn.Invoke chromosome
+          ReinsertionFn = fun parents offspring leftover -> reinsertionFn.Invoke(parents, offspring, leftover)
+          Probe = fun info -> probe.Invoke(info) }
+
     static member CreateProblem<'Gene>
         (
             genotype: Func<Chromosome<'Gene>>,
@@ -226,6 +260,18 @@ type Interop =
             probe: Action<GenerationInfo<'Gene>>
         ) : Options<'Gene> =
         GeneticAlgorithm.CreateOptions(populationSize, selectionFn, crossoverFn, mutationFn, reinsertionFn, probe)
+
+    static member CreateOptions<'Gene>
+        (
+            populationSize: int,
+            selectionFn: Func<Chromosome<'Gene> array, int, Chromosome<'Gene> array>,
+            crossoverFn: Func<Chromosome<'Gene>, Chromosome<'Gene>, Chromosome<'Gene> * Chromosome<'Gene>>,
+            mutationFn: Func<Chromosome<'Gene>, Chromosome<'Gene>>,
+            mutationRate: float,
+            reinsertionFn: Func<Chromosome<'Gene> array, Chromosome<'Gene> array, Chromosome<'Gene> array, Chromosome<'Gene> array>,
+            probe: Action<GenerationInfo<'Gene>>
+        ) : Options<'Gene> =
+        GeneticAlgorithm.CreateOptions(populationSize, selectionFn, crossoverFn, mutationFn, mutationRate, reinsertionFn, probe)
 
     static member CreateProblem<'Gene>
         (

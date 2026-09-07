@@ -179,6 +179,30 @@ let createOptionsTests =
               Expect.equal observedPopulationSize 1 "probe delegate should observe the population"
               Expect.equal observedTemperature 1.5 "probe delegate should observe the temperature"
 
+          testCase "applies a custom mutation rate"
+          <| fun _ ->
+              let selection =
+                  Func<Chromosome<int> array, int, Chromosome<int> array>(fun population count ->
+                      population |> Array.take count)
+
+              let crossover =
+                  Func<Chromosome<int>, Chromosome<int>, Chromosome<int> * Chromosome<int>>(fun left right ->
+                      left, right)
+
+              let mutation = Func<Chromosome<int>, Chromosome<int>>(fun candidate -> candidate)
+
+              let reinsertion =
+                  Func<Chromosome<int> array, Chromosome<int> array, Chromosome<int> array, Chromosome<int> array>(
+                      fun _ offspring _ -> offspring
+                  )
+
+              let probe = Action<GenerationInfo<int>>(fun _ -> ())
+
+              let result =
+                  GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, 0.15, reinsertion, probe)
+
+              Expect.equal result.MutationRate 0.15 "mutation rate should match the supplied value"
+
           testCase "rejects null custom delegates"
           <| fun _ ->
               let selection =
@@ -252,6 +276,36 @@ let createOptionsTests =
               Expect.throwsT<ArgumentNullException>
                   (fun _ ->
                       GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, reinsertion, null)
+                      |> ignore)
+                  "probe delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, null, crossover, mutation, 0.15, reinsertion, probe)
+                      |> ignore)
+                  "selection delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, selection, null, mutation, 0.15, reinsertion, probe)
+                      |> ignore)
+                  "crossover delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, selection, crossover, null, 0.15, reinsertion, probe)
+                      |> ignore)
+                  "mutation delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, 0.15, null, probe)
+                      |> ignore)
+                  "reinsertion delegate should be required"
+
+              Expect.throwsT<ArgumentNullException>
+                  (fun _ ->
+                      GeneticAlgorithm.CreateOptions(10, selection, crossover, mutation, 0.15, reinsertion, null)
                       |> ignore)
                   "probe delegate should be required" ]
 
@@ -432,6 +486,30 @@ let compatibilityFacadeTests =
                     Temperature = 0.0 }
 
               Expect.equal observedGeneration 5 "probe delegate creation should be forwarded"
+
+          testCase "forwards a custom mutation rate"
+          <| fun _ ->
+              let selection =
+                  Func<Chromosome<int> array, int, Chromosome<int> array>(fun population count ->
+                      population |> Array.take count)
+
+              let crossover =
+                  Func<Chromosome<int>, Chromosome<int>, Chromosome<int> * Chromosome<int>>(fun left right ->
+                      left, right)
+
+              let mutation = Func<Chromosome<int>, Chromosome<int>>(fun candidate -> candidate)
+
+              let reinsertion =
+                  Func<Chromosome<int> array, Chromosome<int> array, Chromosome<int> array, Chromosome<int> array>(
+                      fun _ offspring _ -> offspring
+                  )
+
+              let probe = Action<GenerationInfo<int>>(fun _ -> ())
+
+              let result =
+                  Interop.CreateOptions(4, selection, crossover, mutation, 0.15, reinsertion, probe)
+
+              Expect.equal result.MutationRate 0.15 "mutation rate creation should be forwarded"
 
           testCase "forwards every Run overload"
           <| fun _ ->
