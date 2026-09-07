@@ -50,21 +50,54 @@ module Selection =
     let tournament (tournamentSize: int) (population: Chromosome<'Gene> array) (n: int) =
         Array.init n (fun _ -> random population tournamentSize |> Array.maxBy (fun c -> c.Fitness))
 
+    /// A chromosome can only ever win a tournament of size <c>tournamentSize</c> if fewer
+    /// than <c>population.Length - tournamentSize + 1</c> other chromosomes are strictly
+    /// fitter than it - otherwise every tournament it's part of is forced to also include at
+    /// least one strictly fitter chromosome (there aren't enough non-fitter chromosomes left
+    /// to fill the remaining <c>tournamentSize - 1</c> seats without one), which always wins
+    /// instead. This count is unaffected by ties: two chromosomes with equal fitness don't
+    /// make each other unreachable, since <c>Array.maxBy</c> can return either one of them
+    /// depending on tournament draw order.
+    let private isTournamentReachable (tournamentSize: int) (population: Chromosome<'Gene> array) (candidate: Chromosome<'Gene>) =
+        let strictlyFitterCount = population |> Array.filter (fun c -> c.Fitness > candidate.Fitness) |> Array.length
+        strictlyFitterCount <= population.Length - tournamentSize
+
     /// <summary>
     /// Like <c>tournament</c>, but keeps running tournaments until <paramref name="n"/>
     /// distinct chromosomes have been selected.
     /// </summary>
     /// <remarks>
-    /// Can loop indefinitely if <paramref name="n"/> exceeds the number of distinct
-    /// chromosomes reachable through repeated tournaments of the given size - for example,
-    /// if the population itself contains fewer than <paramref name="n"/> distinct
-    /// chromosomes.
+    /// Not every chromosome in <paramref name="population"/> can necessarily win a
+    /// tournament of size <paramref name="tournamentSize"/> - for example, with
+    /// <paramref name="tournamentSize"/> equal to <paramref name="population"/>'s length,
+    /// every tournament draws the whole population, so only the single fittest chromosome
+    /// can ever win, no matter how many times it's retried. Requesting more distinct
+    /// chromosomes than are actually reachable this way would otherwise retry forever, so
+    /// this validates <paramref name="n"/> against the number of chromosomes that can
+    /// actually win some tournament of the given size, and fails fast instead.
     /// </remarks>
     /// <param name="tournamentSize">The number of chromosomes competing in each tournament.</param>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of distinct chromosomes to select.</param>
     /// <returns><paramref name="n"/> distinct tournament winners.</returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="n"/> exceeds the number of chromosomes that can actually
+    /// win a tournament of size <paramref name="tournamentSize"/> over this population.
+    /// </exception>
     let tournamentNoDuplicates (tournamentSize: int) (population: Chromosome<'Gene> array) (n: int) =
+        let maxReachable =
+            population
+            |> Array.distinct
+            |> Array.filter (isTournamentReachable tournamentSize population)
+            |> Array.length
+
+        if n > maxReachable then
+            invalidArg
+                (nameof n)
+                $"Cannot select {n} distinct chromosomes: with a tournament size of {tournamentSize} over this \
+                  population, at most {maxReachable} distinct chromosome(s) can ever win a tournament, so the \
+                  retry loop would never terminate."
+
         let selected = System.Collections.Generic.HashSet<Chromosome<'Gene>>()
 
         while selected.Count < n do

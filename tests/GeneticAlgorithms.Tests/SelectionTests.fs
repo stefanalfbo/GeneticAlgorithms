@@ -1,5 +1,6 @@
 module GeneticAlgorithms.Tests.SelectionTests
 
+open System
 open Expecto
 open GeneticAlgorithms
 
@@ -79,7 +80,48 @@ let tournamentNoDuplicatesTests =
               let result = Selection.tournamentNoDuplicates 2 population 3
 
               Expect.equal result.Length 3 "should return exactly n chromosomes"
-              Expect.equal (result |> Array.distinct |> Array.length) 3 "should not repeat chromosomes" ]
+              Expect.equal (result |> Array.distinct |> Array.length) 3 "should not repeat chromosomes"
+
+          testCase "when tournamentSize covers the whole population, only 1 distinct chromosome is reachable"
+          <| fun _ ->
+              // With tournamentSize = population.Length, every tournament draws the entire
+              // population, so Array.maxBy always returns the same fittest chromosome
+              // (population.[0], confirmed deterministic by Selection.tournament's own
+              // "always picks the fittest..." test above) - so n = 1 is the largest request
+              // that's actually reachable here.
+              let result = Selection.tournamentNoDuplicates population.Length population 1
+
+              Expect.equal result [| population.[0] |] "the only reachable winner is the fittest chromosome"
+
+          testCase "regression: throws instead of looping forever when n exceeds what's reachable"
+          <| fun _ ->
+              // Regression test for a bug: tournamentNoDuplicates used to retry forever
+              // here, since a tournamentSize equal to the whole population always picks the
+              // single fittest chromosome (see the test above), so 2 distinct winners could
+              // never be collected - the `while selected.Count < n` loop had no feasibility
+              // check and just spun forever.
+              //
+              // Run it on a background thread with a short timeout rather than calling it
+              // directly, so that if this regresses in the future, this test fails fast
+              // instead of hanging the whole suite again.
+              let task =
+                  System.Threading.Tasks.Task.Run(fun () ->
+                      Selection.tournamentNoDuplicates population.Length population 2 |> ignore)
+
+              let completedInTime =
+                  try
+                      task.Wait(System.TimeSpan.FromMilliseconds 200.0)
+                  with :? AggregateException ->
+                      true
+
+              Expect.isTrue completedInTime "should fail fast with an exception rather than loop forever"
+              Expect.isTrue task.IsFaulted "should throw rather than loop forever"
+
+              let innerException = task.Exception.Flatten().InnerExceptions |> Seq.exactlyOne
+
+              Expect.isTrue
+                  (innerException :? ArgumentException)
+                  "should throw an ArgumentException explaining why n is infeasible, not hang" ]
 
 [<Tests>]
 let rouletteTests =
