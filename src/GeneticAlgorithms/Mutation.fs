@@ -43,25 +43,23 @@ module Mutation =
     /// </summary>
     /// <remarks>
     /// Unlike <c>scramble</c>, which reorders every gene, this only disturbs a local
-    /// window - a less disruptive mutation for larger chromosomes. If the randomly chosen
-    /// window would extend past the end of the chromosome, it is shifted back so it stays
-    /// exactly <paramref name="n"/> genes long, rather than being allowed to change the
-    /// chromosome's overall length. <paramref name="n"/> must not exceed the chromosome's
-    /// <c>Genes</c> length; this is not validated. Curry <paramref name="n"/> (e.g.
-    /// <c>Mutation.scrambleSlice 3</c>) to use this as an <c>Options.MutationFn</c>.
+    /// window - a less disruptive mutation for larger chromosomes. The window's start
+    /// position is drawn uniformly from every position where a <paramref name="n"/>-gene
+    /// window fits entirely within the chromosome (positions <c>0</c> through
+    /// <c>Genes.Length - n</c>, inclusive), so it always stays exactly <paramref name="n"/>
+    /// genes long without needing to be shifted, and every gene - including the very first
+    /// and very last - has an equal chance of falling inside it. <paramref name="n"/> must
+    /// not exceed the chromosome's <c>Genes</c> length; this is not validated. Curry
+    /// <paramref name="n"/> (e.g. <c>Mutation.scrambleSlice 3</c>) to use this as an
+    /// <c>Options.MutationFn</c>.
     /// </remarks>
     /// <param name="n">The size of the window to scramble.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with a random <paramref name="n"/>-gene window scrambled in place.</returns>
     let scrambleSlice (n: int) (chromosome: Chromosome<'Gene>) =
         let size = chromosome.Genes.Length
-        let start = System.Random.Shared.Next(1, n)
-
-        let lo, hi =
-            if start + n >= size then
-                size - n, size
-            else
-                start, start + n
+        let lo = System.Random.Shared.Next(0, size - n + 1)
+        let hi = lo + n
 
         let head = chromosome.Genes.[0 .. lo - 1]
         let mid = chromosome.Genes.[lo .. hi - 1] |> Array.sortBy (fun _ -> System.Random.Shared.Next())

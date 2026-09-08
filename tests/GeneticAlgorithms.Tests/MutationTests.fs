@@ -94,29 +94,33 @@ let scrambleSliceTests =
 
               Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged"
 
-          testCase "when the chosen window would extend past the end, shifts it back to stay in bounds"
+          testCase "regression: the window can reach both the first and the last gene"
           <| fun _ ->
-              // With a 6-gene chromosome and a window of 5, start + n is at least 1 + 5 = 6,
-              // which is always >= size (6) - the "shift back" branch is taken on every draw,
-              // not just overwhelmingly likely. The shifted window is always [1..5], so gene 0
-              // is always left untouched.
-              let chromosome = makeChromosome [| 0 .. 5 |]
+              // Bug: the window's start used to be drawn from Random.Next(1, n), which
+              // doesn't reference the chromosome's size at all - for a 10-gene chromosome
+              // with a window of 4, only starts 1, 2, or 3 were ever drawn (windows [1,5),
+              // [2,6), [3,7)), so gene 0 and genes 7-9 could never be touched no matter how
+              // many times this ran. The valid range is 0..size-n (0..6 here) - every
+              // position should be reachable, including both ends.
+              //
+              // 200 trials makes the odds of never drawing the window that covers gene 0
+              // (lo = 0) or the one that covers gene 9 (lo = 6), out of 7 equally likely
+              // positions, (6/7)^200 - astronomically small, not just "overwhelmingly
+              // likely."
+              let chromosome = makeChromosome [| 0 .. 9 |]
 
-              for _ in 1..100 do
-                  let result = Mutation.scrambleSlice 5 chromosome
+              let touchesGene index =
+                  Seq.init 200 (fun _ -> Mutation.scrambleSlice 4 chromosome)
+                  |> Seq.exists (fun result -> result.Genes.[index] <> chromosome.Genes.[index])
 
-                  Expect.equal result.Genes.[0] chromosome.Genes.[0] "gene before the shifted window should be untouched"
-
-                  Expect.containsAll
-                      result.Genes.[1..]
-                      chromosome.Genes.[1..]
-                      "shifted window should contain the same genes, reordered"
+              Expect.isTrue (touchesGene 0) "the window should sometimes reach the first gene"
+              Expect.isTrue (touchesGene 9) "the window should sometimes reach the last gene"
 
           testCase "when the window size equals the chromosome size, scrambles every gene"
           <| fun _ ->
-              // With a 5-gene chromosome and a window of 5, the shift-back branch always fires
-              // and the shifted window spans the entire chromosome (lo = 0, hi = size) -
-              // deterministic, not just overwhelmingly likely.
+              // With a 5-gene chromosome and a window of 5, size - n = 0, so the window's
+              // start is always 0 (the only value Random.Next(0, 1) can return) and spans
+              // the entire chromosome - deterministic, not just overwhelmingly likely.
               let chromosome = makeChromosome [| 0 .. 4 |]
 
               for _ in 1..100 do
