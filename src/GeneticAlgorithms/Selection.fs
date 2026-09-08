@@ -252,8 +252,8 @@ module Selection =
         Array.init n (fun _ -> pickWeighted ranked weights)
 
     /// <summary>
-    /// Splits <paramref name="population"/> into parent pairs, the distinct chromosomes used
-    /// as parents, and leftover chromosomes for one generation: selects
+    /// Splits <paramref name="population"/> into parent pairs, the chromosomes consumed as
+    /// parents, and leftover chromosomes for one generation: selects
     /// <c>SelectionRate * population.Length</c> chromosomes (rounded up to an even number)
     /// using <c>opts.SelectionFn</c>, pairs them up, and returns whatever wasn't selected as
     /// leftover.
@@ -265,26 +265,47 @@ module Selection =
     /// <c>opts.SelectionFn</c> for more chromosomes than exist, which fails for
     /// implementations like <c>elite</c> that take a fixed slice.
     ///
-    /// Several <c>SelectionFn</c> implementations (<c>tournament</c>, <c>roulette</c>,
-    /// <c>boltzmann</c>, <c>stochasticUniversalSampling</c>) can legitimately select the same
-    /// chromosome more than once - the same individual pairing with two different partners
-    /// is a normal, intentional part of tournament/fitness-proportionate selection. The
-    /// second element of the returned tuple is deduplicated specifically so that
-    /// <c>Reinsertion</c> strategies which combine it with <paramref name="population"/>'s
-    /// leftover (e.g. <c>elitist</c>, <c>uniform</c>) can rely on the two adding back up to
-    /// <paramref name="population"/>'s size, regardless of duplicate selections - one
-    /// physical individual selected twice as a parent is still only one individual, not two,
-    /// once selection is done and it's time to decide who survives into the next
-    /// generation. <c>parentPairs</c> (the first element) is built from the raw, possibly-
-    /// duplicated selection instead, since crossover pairing is exactly where a repeated
-    /// individual is meant to participate more than once.
+    /// Chromosomes are compared by value, not by which physical population slot they came
+    /// from, which makes "how many chromosomes were actually used as parents" ambiguous
+    /// whenever the same value shows up more than once in the raw selection - and that can
+    /// happen for two very different reasons. <c>tournament</c>, <c>roulette</c>,
+    /// <c>boltzmann</c>, and <c>stochasticUniversalSampling</c> can legitimately redraw the
+    /// same individual more than once (independent draws with replacement) - the same
+    /// physical individual pairing with two different partners is a normal, intentional part
+    /// of tournament/fitness-proportionate selection, and should count as one parent, not
+    /// two. But <c>elite</c>'s deterministic top-N slice can just as legitimately select
+    /// several genuinely distinct population slots that happen to hold value-identical
+    /// chromosomes - unsurprising once a population has substantially converged, since
+    /// <c>Reinsertion.elitist</c> is specifically designed to carry the fittest chromosome(s)
+    /// forward unchanged generation after generation - and those are separate individuals
+    /// that should each count once, not be collapsed into one. A plain
+    /// <c>Array.distinct</c> over the raw selection cannot tell these two cases apart, and
+    /// picks the wrong answer for the second: undercounting parents shrinks
+    /// <c>parents.Length + leftover.Length</c> below <paramref name="population"/>'s size,
+    /// which compounds every generation elitism converges the population - this is exactly
+    /// what caused <c>OneMaxProblem</c> to hang partway to its target.
+    ///
+    /// The second element of the returned tuple resolves this by counting, per distinct
+    /// value, how many times it was actually selected, then walking
+    /// <paramref name="population"/> once and consuming physical slots up to that count per
+    /// value (never more than actually exist) - each slot consumed this way becomes one
+    /// entry in <c>parents</c>, so a value that legitimately came from several distinct
+    /// population slots (the <c>elite</c> case) is represented that many times, while a value
+    /// that was redrawn more often than the population physically holds it (the
+    /// <c>roulette</c>/<c>tournament</c> case) is capped at how many slots actually exist.
+    /// Either way, <c>parents.Length + leftover.Length</c> always equals
+    /// <paramref name="population"/>'s length, which is what <c>Reinsertion</c> strategies
+    /// that combine the two (e.g. <c>elitist</c>, <c>uniform</c>) rely on. <c>parentPairs</c>
+    /// (the first element) is built from the raw, possibly-duplicated selection instead,
+    /// since crossover pairing is exactly where a repeated individual is meant to participate
+    /// more than once.
     /// </remarks>
     /// <param name="opts">Provides <c>SelectionRate</c> and <c>SelectionFn</c>.</param>
     /// <param name="population">The population to select parents from.</param>
     /// <returns>
-    /// A tuple of parent pairs to crossover, the distinct chromosomes selected as parents,
-    /// and the leftover chromosomes that carry over to the next generation unchanged (aside
-    /// from mutation).
+    /// A tuple of parent pairs to crossover, the chromosomes consumed as parents, and the
+    /// leftover chromosomes that carry over to the next generation unchanged (aside from
+    /// mutation).
     /// </returns>
     let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
         let maxN = population.Length - (population.Length % 2)
@@ -293,8 +314,22 @@ module Selection =
         let n = min n maxN
 
         let selected = opts.SelectionFn population n
-        let distinctParents = selected |> Array.distinct
-        let leftover = population |> Seq.except distinctParents |> Seq.toArray
+
+        let remainingBySelection =
+            selected
+            |> Array.countBy id
+            |> Array.map (fun (chromosome, count) -> System.Collections.Generic.KeyValuePair(chromosome, count))
+            |> System.Collections.Generic.Dictionary
+
+        let parents = ResizeArray<Chromosome<'Gene>>()
+        let leftover = ResizeArray<Chromosome<'Gene>>()
+
+        for chromosome in population do
+            match remainingBySelection.TryGetValue chromosome with
+            | true, remaining when remaining > 0 ->
+                parents.Add chromosome
+                remainingBySelection.[chromosome] <- remaining - 1
+            | _ -> leftover.Add chromosome
 
         let parentPairs =
             selected
@@ -304,4 +339,4 @@ module Selection =
                 | [| a; b |] -> a, b
                 | _ -> failwith "Invalid chunk size")
 
-        parentPairs, distinctParents, leftover
+        parentPairs, parents.ToArray(), leftover.ToArray()

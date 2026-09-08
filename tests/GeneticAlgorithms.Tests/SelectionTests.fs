@@ -348,4 +348,32 @@ let selectTests =
               Expect.equal
                   (parents.Length + leftover.Length)
                   population.Length
-                  "parents and leftover should add back up to the population size, even with duplicate selections" ]
+                  "parents and leftover should add back up to the population size, even with duplicate selections"
+
+          testCase "regression: distinct population slots that happen to share a value are each counted as a parent"
+          <| fun _ ->
+              // Bug: the fix above (deduplicating parents by value) went too far - it also
+              // collapsed the case where the population itself genuinely contains more than
+              // one physically distinct chromosome with the same value, which is exactly what
+              // Reinsertion.elitist produces once a population converges (the fittest
+              // chromosome(s) carried forward unchanged, generation after generation). If
+              // Selection.elite's deterministic top-N slice includes several of those
+              // value-identical slots, each one is a real, separate individual and must count
+              // once each - collapsing them the same way as a roulette-style repeated draw
+              // undercounts parents, so parents.Length + leftover.Length falls short of
+              // population.Length and the population silently shrinks every generation this
+              // happens. This is exactly what made OneMaxProblem hang partway to its target.
+              let fittest = makeChromosome 9.0
+              let converged = [| fittest; fittest; makeChromosome 2.0; makeChromosome 1.0 |]
+
+              let parentPairs, parents, leftover =
+                  Selection.select { opts with SelectionRate = 0.5; SelectionFn = Selection.elite } converged
+
+              Expect.equal parentPairs.Length 1 "should still form one pair for crossover"
+              Expect.equal parentPairs.[0] (fittest, fittest) "the pair should use both value-identical slots"
+              Expect.equal parents.Length 2 "both distinct population slots should each count as a parent"
+              Expect.equal leftover.Length 2 "only the two unselected chromosomes should be left over"
+              Expect.equal
+                  (parents.Length + leftover.Length)
+                  converged.Length
+                  "parents and leftover should add back up to the population size" ]
