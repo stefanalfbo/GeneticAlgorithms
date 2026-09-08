@@ -13,6 +13,13 @@ let private population =
        makeChromosome 2.0
        makeChromosome 1.0 |]
 
+// Every chromosome shares Fitness = 0.0 (a valid state under roulette/SUS's own
+// non-negative-fitness contract), but distinct Genes so a regression test can tell which
+// ones were actually selected - makeChromosome's [| 0 |] genes would otherwise make every
+// zero-fitness chromosome structurally identical.
+let private zeroFitnessPopulation =
+    Array.init 4 (fun i -> { Genes = [| i |]; Fitness = 0.0; Age = 0 })
+
 let private opts: Options<int> =
     { PopulationSize = population.Length
       SelectionRate = 0.8
@@ -141,7 +148,21 @@ let rouletteTests =
 
               let result = Selection.roulette weighted 5
 
-              Expect.all result (fun c -> c = weighted.[0]) "should always pick the chromosome with all the fitness" ]
+              Expect.all result (fun c -> c = weighted.[0]) "should always pick the chromosome with all the fitness"
+
+          testCase "regression: falls back to uniform selection when every chromosome has zero fitness"
+          <| fun _ ->
+              // Bug: with a total weight of exactly 0.0, the underlying cumulative walk's
+              // termination check (w + sum > u, where u is also always 0.0) never triggers,
+              // so it always fell through to and returned the very last population member,
+              // deterministically, rather than picking without preference. 100 picks over 4
+              // chromosomes makes still seeing only 1 distinct result astronomically
+              // unlikely if the fallback to uniform selection is working.
+              let result = Selection.roulette zeroFitnessPopulation 100
+
+              Expect.isTrue
+                  (result |> Array.distinct |> Array.length > 1)
+                  "zero fitness should fall back to uniform selection, not always the last chromosome" ]
 
 [<Tests>]
 let boltzmannTests =
@@ -211,7 +232,21 @@ let stochasticUniversalSamplingTests =
               Expect.equal (countOf weighted.[0]) 4 "the chromosome with 4/10 of the fitness should be picked exactly 4 times"
               Expect.equal (countOf weighted.[1]) 3 "the chromosome with 3/10 of the fitness should be picked exactly 3 times"
               Expect.equal (countOf weighted.[2]) 2 "the chromosome with 2/10 of the fitness should be picked exactly 2 times"
-              Expect.equal (countOf weighted.[3]) 1 "the chromosome with 1/10 of the fitness should be picked exactly 1 time" ]
+              Expect.equal (countOf weighted.[3]) 1 "the chromosome with 1/10 of the fitness should be picked exactly 1 time"
+
+          testCase "regression: falls back to uniform selection when every chromosome has zero fitness"
+          <| fun _ ->
+              // Bug: with a total weight of exactly 0.0, every pointer sits at the same zero
+              // offset, so the walk stops advancing at the very first chromosome it reaches
+              // and every pick returned that one chromosome, deterministically, rather than
+              // picking without preference. 100 picks over 4 chromosomes makes still seeing
+              // only 1 distinct result astronomically unlikely if the fallback to uniform
+              // selection is working.
+              let result = Selection.stochasticUniversalSampling zeroFitnessPopulation 100
+
+              Expect.isTrue
+                  (result |> Array.distinct |> Array.length > 1)
+                  "zero fitness should fall back to uniform selection, not always the same chromosome" ]
 
 [<Tests>]
 let rankTests =

@@ -108,22 +108,31 @@ module Selection =
 
     /// Picks a single chromosome at random, with probability proportional to its weight
     /// (<paramref name="weights"/>.[i] corresponds to <paramref name="population"/>.[i]).
+    /// Falls back to a uniform random pick when every weight is <c>0.0</c> - the cumulative
+    /// walk below can never find a weight that pushes it past a random draw of exactly
+    /// <c>0.0</c>, so without this it would always fall through to and return the very last
+    /// chromosome, deterministically, rather than choosing without preference as a total
+    /// weight of zero implies.
     let private pickWeighted (population: Chromosome<'Gene> array) (weights: float array) =
         let totalWeight = Array.sum weights
-        let u = System.Random.Shared.NextDouble() * totalWeight
 
-        let rec loop sum i =
-            if i >= population.Length - 1 then
-                population.[population.Length - 1]
-            else
-                let w = weights.[i]
+        if totalWeight = 0.0 then
+            population.[System.Random.Shared.Next(population.Length)]
+        else
+            let u = System.Random.Shared.NextDouble() * totalWeight
 
-                if w + sum > u then
-                    population.[i]
+            let rec loop sum i =
+                if i >= population.Length - 1 then
+                    population.[population.Length - 1]
                 else
-                    loop (sum + w) (i + 1)
+                    let w = weights.[i]
 
-        loop 0.0 0
+                    if w + sum > u then
+                        population.[i]
+                    else
+                        loop (sum + w) (i + 1)
+
+            loop 0.0 0
 
     /// <summary>
     /// Selects <paramref name="n"/> chromosomes using fitness-proportionate ("roulette
@@ -133,7 +142,10 @@ module Selection =
     /// <remarks>
     /// Assumes non-negative fitness values. A single much-fitter chromosome can dominate
     /// selection; see <c>rank</c> or <c>boltzmann</c> for alternatives that are less
-    /// sensitive to fitness magnitude.
+    /// sensitive to fitness magnitude. If every chromosome has fitness <c>0.0</c> - a valid
+    /// state under this function's own contract, e.g. an early generation where every
+    /// candidate happens to be infeasible - each pick falls back to uniform random selection
+    /// instead of favoring any particular chromosome.
     /// </remarks>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of chromosomes to select.</param>
@@ -184,29 +196,42 @@ module Selection =
     /// across the population once, so each chromosome's selection count tracks its fitness
     /// share far more tightly than independent draws (as in <c>roulette</c>) would.
     /// </summary>
+    /// <remarks>
+    /// Assumes non-negative fitness values. If every chromosome has fitness <c>0.0</c> - a
+    /// valid state under this function's own contract, e.g. an early generation where every
+    /// candidate happens to be infeasible - every pointer would otherwise sit at the same
+    /// zero offset and the walk below would stop advancing at the very first chromosome it
+    /// reaches, returning that one chromosome for every pick rather than selecting without
+    /// preference. This falls back to <paramref name="n"/> independent uniform random picks
+    /// instead in that case.
+    /// </remarks>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> chromosomes, possibly with duplicates.</returns>
     let stochasticUniversalSampling (population: Chromosome<'Gene> array) (n: int) =
         let weights = population |> Array.map (fun c -> c.Fitness)
         let totalWeight = Array.sum weights
-        let pointerDistance = totalWeight / float n
-        let start = System.Random.Shared.NextDouble() * pointerDistance
 
-        let selected = ResizeArray<Chromosome<'Gene>>(n)
-        let mutable sum = weights.[0]
-        let mutable i = 0
+        if totalWeight = 0.0 then
+            Array.init n (fun _ -> population.[System.Random.Shared.Next(population.Length)])
+        else
+            let pointerDistance = totalWeight / float n
+            let start = System.Random.Shared.NextDouble() * pointerDistance
 
-        for j in 0 .. n - 1 do
-            let pointer = start + float j * pointerDistance
+            let selected = ResizeArray<Chromosome<'Gene>>(n)
+            let mutable sum = weights.[0]
+            let mutable i = 0
 
-            while sum <= pointer && i < population.Length - 1 do
-                i <- i + 1
-                sum <- sum + weights.[i]
+            for j in 0 .. n - 1 do
+                let pointer = start + float j * pointerDistance
 
-            selected.Add population.[i]
+                while sum <= pointer && i < population.Length - 1 do
+                    i <- i + 1
+                    sum <- sum + weights.[i]
 
-        selected.ToArray()
+                selected.Add population.[i]
+
+            selected.ToArray()
 
     /// <summary>
     /// Selects <paramref name="n"/> chromosomes weighted by rank (1 for the worst, N for
