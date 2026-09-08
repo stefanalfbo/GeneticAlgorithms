@@ -173,6 +173,10 @@ let problem: Problem<int> =
       FitnessFunction = fitness_function
       Terminate = terminate }
 
+// SelectionRate 0.8 + MutationRate 0.05 + Reinsertion.elitist's survivalRate 0.15 sum to
+// 1.0, which keeps population size stable across generations - `` Reinsertion.`pure` ``
+// would discard SelectionRate's 20% leftover with nothing to replace it beyond this
+// generation's mutants, shrinking the population by ~15% every generation.
 let options =
     { PopulationSize = 100
       SelectionRate = 0.8
@@ -180,7 +184,7 @@ let options =
       CrossoverFn = Crossover.singlePoint
       MutationRate = 0.05
       MutationFn = Mutation.scramble
-      ReinsertionFn = Reinsertion.``pure``
+      ReinsertionFn = Reinsertion.elitist 0.15
       Probe = Probes.printProgress }
 
 let solution = Genetic.run problem options
@@ -200,6 +204,8 @@ var solution = GeneticAlgorithm.Run(
     population.Any(chromosome => chromosome.Fitness >= 1.0) || generation >= 10,
   populationSize: 8);
 ```
+
+The `populationSize`-only overloads (this one and `CreateOptions(populationSize)`) default to `SelectionRate = 0.8`, `MutationRate = 0.05`, and `Reinsertion.elitist 0.15` - the same population-stable combination used throughout this library's own examples, so population size stays constant across generations without any further configuration.
 
 To use a non-default selection, crossover, or mutation strategy, build `Options<'Gene>` with `GeneticAlgorithm.CreateOptions(populationSize, selectionFn, crossoverFn, mutationFn)` instead - the library's own `Selection`/`Crossover`/`Mutation` module functions can be passed directly as method groups, since they compile to ordinary multi-argument static methods:
 

@@ -74,6 +74,33 @@ let createOptionsTests =
               Expect.equal result.SelectionRate 0.8 "selection rate should use the default"
               Expect.equal result.MutationRate 0.05 "mutation rate should use the default"
 
+          testCase "regression: defaults to a population-stable reinsertion strategy"
+          <| fun _ ->
+              // Bug: the default used to be `` Reinsertion.`pure` ``, which discards parents
+              // and leftover entirely - only offspring survives reinsertion. Combined with
+              // the SelectionRate 0.8 and MutationRate 0.05 defaults, that shrinks the
+              // population by ~15% every single generation, out of the box, with no
+              // configuration needed to trigger it. Reinsertion.elitist 0.15 keeps
+              // SelectionRate + MutationRate + survivalRate summing to 1.0 instead.
+              //
+              // old.Length (parents.Length + leftover.Length) needs to be large enough that
+              // floor(old.Length * 0.15) >= 1 to actually tell the two strategies apart - 10
+              // parents + 10 leftover here, so elitist keeps 3 survivors and pure keeps none.
+              let result = GeneticAlgorithm.CreateOptions<int> 20
+
+              let parents = Array.init 10 (fun i -> { Genes = [| i |]; Fitness = float i; Age = 0 })
+
+              let leftover =
+                  Array.init 10 (fun i -> { Genes = [| i + 10 |]; Fitness = float (i + 10); Age = 0 })
+
+              let offspring = [| { Genes = [| 99 |]; Fitness = 99.0; Age = 0 } |]
+
+              let nextGeneration = result.ReinsertionFn parents offspring leftover
+
+              Expect.isTrue
+                  (nextGeneration.Length > offspring.Length)
+                  "the default reinsertion strategy should carry some survivors forward, not just offspring"
+
           testCase "adapts custom delegates"
           <| fun _ ->
               let selection =
@@ -95,7 +122,11 @@ let createOptionsTests =
               Expect.equal (result.SelectionFn [| first; second |] 1) [| first |] "selection delegate should be invoked"
               Expect.equal (result.CrossoverFn first second) (second, first) "crossover delegate should be invoked"
               Expect.equal (result.MutationFn first).Age 1 "mutation delegate should be invoked"
-              Expect.equal (result.ReinsertionFn [||] [| first |] [||]) [| first |] "default reinsertion should be pure"
+              // Empty parents/leftover is degenerate for any reinsertion strategy (nothing to
+              // carry over either way), so this only confirms offspring passes through - see
+              // "defaults to a population-stable reinsertion strategy" for which strategy it
+              // actually is.
+              Expect.equal (result.ReinsertionFn [||] [| first |] [||]) [| first |] "offspring should pass through reinsertion"
 
               // The default probe is a no-op - calling it should have no observable effect
               // and, in particular, should not throw.
@@ -396,7 +427,39 @@ let runTests =
 
               Expect.throwsT<ArgumentNullException>
                   (fun _ -> GeneticAlgorithm.Run(genotype, fitness, terminate, nullOptions) |> ignore)
-                  "options should be required" ]
+                  "options should be required"
+
+          testCase "regression: default population size stays stable across generations"
+          <| fun _ ->
+              // End-to-end guard for the same default-reinsertion-strategy bug covered under
+              // GeneticAlgorithm.CreateOptions above, through the actual multi-generation
+              // GeneticAlgorithm.Run path rather than a single ReinsertionFn call. Genes are
+              // an incrementing counter (not a small fixed value) so the initial population
+              // is never coincidentally value-identical, keeping this focused on the default
+              // options' own population-size arithmetic.
+              let mutable nextId = 0
+
+              let genotype =
+                  Func<Chromosome<int>>(fun () ->
+                      nextId <- nextId + 1
+                      { Genes = [| nextId; 0 |]; Fitness = 0.0; Age = 0 })
+
+              let fitness = Func<Chromosome<int>, float>(fun c -> float c.Genes.[0])
+
+              let terminate =
+                  Func<IEnumerable<Chromosome<int>>, int, float, bool>(fun _ generation _ -> generation >= 5)
+
+              let observedPopulationSizes = System.Collections.Generic.List<int>()
+
+              let probe =
+                  Action<GenerationInfo<int>>(fun info -> observedPopulationSizes.Add info.Population.Length)
+
+              GeneticAlgorithm.Run(genotype, fitness, terminate, 20, probe) |> ignore
+
+              Expect.all
+                  observedPopulationSizes
+                  ((=) 20)
+                  "population size should stay stable across every generation using the default options" ]
 
 [<Tests>]
 let compatibilityFacadeTests =

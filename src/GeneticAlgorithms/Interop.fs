@@ -20,7 +20,7 @@ type GeneticAlgorithm =
           CrossoverFn = Crossover.singlePoint
           MutationRate = 0.05
           MutationFn = Mutation.scramble
-          ReinsertionFn = Reinsertion.``pure``
+          ReinsertionFn = Reinsertion.elitist 0.15
           Probe = Probes.noop }
 
     static member CreateOptions<'Gene>
@@ -45,7 +45,7 @@ type GeneticAlgorithm =
           CrossoverFn = fun p1 p2 -> crossoverFn.Invoke(p1, p2)
           MutationRate = 0.05
           MutationFn = fun chromosome -> mutationFn.Invoke chromosome
-          ReinsertionFn = Reinsertion.``pure``
+          ReinsertionFn = Reinsertion.elitist 0.15
           Probe = Probes.noop }
 
     static member CreateOptions<'Gene>
