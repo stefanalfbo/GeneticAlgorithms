@@ -251,24 +251,14 @@ module Selection =
         let weights = Array.init ranked.Length (fun i -> float (i + 1))
         Array.init n (fun _ -> pickWeighted ranked weights)
 
-    /// <summary>
-    /// Splits <paramref name="population"/> into parent pairs, the chromosomes consumed as
-    /// parents, and leftover chromosomes for one generation: selects
-    /// <c>SelectionRate * population.Length</c> chromosomes (rounded up to an even number)
-    /// using <c>opts.SelectionFn</c>, pairs them up, and returns whatever wasn't selected as
-    /// leftover.
-    /// </summary>
-    /// <remarks>
-    /// The rounded-up count is capped at the largest even number that doesn't exceed
-    /// <paramref name="population"/>'s length - without this, a <c>SelectionRate</c> of 1.0
-    /// (or population sizes that make rounding land above the population itself) would ask
-    /// <c>opts.SelectionFn</c> for more chromosomes than exist, which fails for
-    /// implementations like <c>elite</c> that take a fixed slice.
+    /// Splits <paramref name="population"/> into the chromosomes consumed as parents and the
+    /// leftover chromosomes, given the raw (possibly value-duplicated) result of a
+    /// <c>SelectionFn</c> call.
     ///
     /// Chromosomes are compared by value, not by which physical population slot they came
     /// from, which makes "how many chromosomes were actually used as parents" ambiguous
-    /// whenever the same value shows up more than once in the raw selection - and that can
-    /// happen for two very different reasons. <c>tournament</c>, <c>roulette</c>,
+    /// whenever the same value shows up more than once in <paramref name="selected"/> - and
+    /// that can happen for two very different reasons. <c>tournament</c>, <c>roulette</c>,
     /// <c>boltzmann</c>, and <c>stochasticUniversalSampling</c> can legitimately redraw the
     /// same individual more than once (independent draws with replacement) - the same
     /// physical individual pairing with two different partners is a normal, intentional part
@@ -279,42 +269,23 @@ module Selection =
     /// <c>Reinsertion.elitist</c> is specifically designed to carry the fittest chromosome(s)
     /// forward unchanged generation after generation - and those are separate individuals
     /// that should each count once, not be collapsed into one. A plain
-    /// <c>Array.distinct</c> over the raw selection cannot tell these two cases apart, and
-    /// picks the wrong answer for the second: undercounting parents shrinks
+    /// <c>Array.distinct</c> over <paramref name="selected"/> cannot tell these two cases
+    /// apart, and picks the wrong answer for the second: undercounting parents shrinks
     /// <c>parents.Length + leftover.Length</c> below <paramref name="population"/>'s size,
     /// which compounds every generation elitism converges the population - this is exactly
     /// what caused <c>OneMaxProblem</c> to hang partway to its target.
     ///
-    /// The second element of the returned tuple resolves this by counting, per distinct
-    /// value, how many times it was actually selected, then walking
-    /// <paramref name="population"/> once and consuming physical slots up to that count per
-    /// value (never more than actually exist) - each slot consumed this way becomes one
-    /// entry in <c>parents</c>, so a value that legitimately came from several distinct
-    /// population slots (the <c>elite</c> case) is represented that many times, while a value
-    /// that was redrawn more often than the population physically holds it (the
-    /// <c>roulette</c>/<c>tournament</c> case) is capped at how many slots actually exist.
-    /// Either way, <c>parents.Length + leftover.Length</c> always equals
+    /// This resolves it by counting, per distinct value, how many times it was actually
+    /// selected, then walking <paramref name="population"/> once and consuming physical slots
+    /// up to that count per value (never more than actually exist) - each slot consumed this
+    /// way becomes one entry in the first element of the result, so a value that legitimately
+    /// came from several distinct population slots (the <c>elite</c> case) is represented
+    /// that many times, while a value that was redrawn more often than the population
+    /// physically holds it (the <c>roulette</c>/<c>tournament</c> case) is capped at how many
+    /// slots actually exist. Either way, the two returned arrays' lengths always sum to
     /// <paramref name="population"/>'s length, which is what <c>Reinsertion</c> strategies
-    /// that combine the two (e.g. <c>elitist</c>, <c>uniform</c>) rely on. <c>parentPairs</c>
-    /// (the first element) is built from the raw, possibly-duplicated selection instead,
-    /// since crossover pairing is exactly where a repeated individual is meant to participate
-    /// more than once.
-    /// </remarks>
-    /// <param name="opts">Provides <c>SelectionRate</c> and <c>SelectionFn</c>.</param>
-    /// <param name="population">The population to select parents from.</param>
-    /// <returns>
-    /// A tuple of parent pairs to crossover, the chromosomes consumed as parents, and the
-    /// leftover chromosomes that carry over to the next generation unchanged (aside from
-    /// mutation).
-    /// </returns>
-    let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
-        let maxN = population.Length - (population.Length % 2)
-        let n = int (System.Math.Round(float population.Length * opts.SelectionRate))
-        let n = if n % 2 = 0 then n else n + 1
-        let n = min n maxN
-
-        let selected = opts.SelectionFn population n
-
+    /// that combine them (e.g. <c>elitist</c>, <c>uniform</c>) rely on.
+    let private partitionSelected (population: Chromosome<'Gene> array) (selected: Chromosome<'Gene> array) =
         let remainingBySelection =
             selected
             |> Array.countBy id
@@ -331,6 +302,45 @@ module Selection =
                 remainingBySelection.[chromosome] <- remaining - 1
             | _ -> leftover.Add chromosome
 
+        parents.ToArray(), leftover.ToArray()
+
+    /// <summary>
+    /// Splits <paramref name="population"/> into parent pairs, the chromosomes consumed as
+    /// parents, and leftover chromosomes for one generation: selects
+    /// <c>SelectionRate * population.Length</c> chromosomes (rounded up to an even number)
+    /// using <c>opts.SelectionFn</c>, pairs them up, and returns whatever wasn't selected as
+    /// leftover.
+    /// </summary>
+    /// <remarks>
+    /// The rounded-up count is capped at the largest even number that doesn't exceed
+    /// <paramref name="population"/>'s length - without this, a <c>SelectionRate</c> of 1.0
+    /// (or population sizes that make rounding land above the population itself) would ask
+    /// <c>opts.SelectionFn</c> for more chromosomes than exist, which fails for
+    /// implementations like <c>elite</c> that take a fixed slice.
+    ///
+    /// The second and third elements of the returned tuple (parents and leftover) always add
+    /// up to <paramref name="population"/>'s length - see <c>partitionSelected</c>'s own
+    /// remarks for why that isn't as simple as a value-based set difference on the raw
+    /// selection. <c>parentPairs</c> (the first element) is built from the raw,
+    /// possibly-duplicated selection instead, since crossover pairing is exactly where a
+    /// repeated individual is meant to participate more than once.
+    /// </remarks>
+    /// <param name="opts">Provides <c>SelectionRate</c> and <c>SelectionFn</c>.</param>
+    /// <param name="population">The population to select parents from.</param>
+    /// <returns>
+    /// A tuple of parent pairs to crossover, the chromosomes consumed as parents, and the
+    /// leftover chromosomes that carry over to the next generation unchanged (aside from
+    /// mutation).
+    /// </returns>
+    let select (opts: Options<'Gene>) (population: Chromosome<'Gene> array) =
+        let maxN = population.Length - (population.Length % 2)
+        let n = int (System.Math.Round(float population.Length * opts.SelectionRate))
+        let n = if n % 2 = 0 then n else n + 1
+        let n = min n maxN
+
+        let selected = opts.SelectionFn population n
+        let parents, leftover = partitionSelected population selected
+
         let parentPairs =
             selected
             |> Array.chunkBySize 2
@@ -339,4 +349,4 @@ module Selection =
                 | [| a; b |] -> a, b
                 | _ -> failwith "Invalid chunk size")
 
-        parentPairs, parents.ToArray(), leftover.ToArray()
+        parentPairs, parents, leftover
