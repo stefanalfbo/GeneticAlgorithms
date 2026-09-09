@@ -46,10 +46,19 @@ module Probes =
     /// <remarks>
     /// Useful for throttling a probe that would otherwise be too expensive or too verbose
     /// to run every single generation - writing to a file or calling a remote service, for
-    /// example.
+    /// example. <paramref name="n"/> is validated eagerly, when the throttled probe is
+    /// created, rather than left to fail later inside the returned probe the first time it
+    /// runs: <c>n = 0</c> would make every call divide by zero, and a negative
+    /// <paramref name="n"/> would silently produce a nonsensical throttling pattern instead
+    /// of an error - both easy to mistake for a probe that's simply broken, deep inside a
+    /// run rather than at the point the mistake was actually made.
     /// </remarks>
-    /// <param name="n">Run the probe once every <paramref name="n"/> generations.</param>
+    /// <param name="n">Run the probe once every <paramref name="n"/> generations. Must be positive.</param>
     /// <param name="observe">The probe to throttle.</param>
     /// <returns>A probe that only forwards to <paramref name="observe"/> on matching generations.</returns>
+    /// <exception cref="System.ArgumentException">Thrown when <paramref name="n"/> is not positive.</exception>
     let everyNth (n: int) (observe: GenerationInfo<'Gene> -> unit) : GenerationInfo<'Gene> -> unit =
+        if n <= 0 then
+            invalidArg (nameof n) $"n must be positive; got {n}."
+
         fun info -> if info.Generation % n = 0 then observe info

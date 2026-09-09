@@ -80,4 +80,20 @@ let everyNthTests =
               for generation in 1..4 do
                   throttled (makeInfo generation)
 
-              Expect.equal callCount 0 "no generation from 1 to 4 is a multiple of 5" ]
+              Expect.equal callCount 0 "no generation from 1 to 4 is a multiple of 5"
+
+          testCase "regression: rejects n = 0 when the probe is created, not later when it runs"
+          <| fun _ ->
+              // Bug: Probes.everyNth 0 used to return a probe that only threw
+              // DivideByZeroException the first time it was actually invoked (info.Generation
+              // % 0) - deep inside a run, far from where the mistake (n = 0) was made. It
+              // should fail immediately, at creation time, instead.
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Probes.everyNth 0 (fun _ -> ()) |> ignore)
+                  "n = 0 should be rejected when the probe is created"
+
+          testCase "regression: rejects a negative n when the probe is created"
+          <| fun _ ->
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Probes.everyNth -1 (fun _ -> ()) |> ignore)
+                  "a negative n should be rejected when the probe is created" ]
