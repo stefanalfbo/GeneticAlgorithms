@@ -24,8 +24,8 @@ let private numberOfCities = cities.Length
 // A chromosome's genes are a permutation of city indices - the order in which the tour
 // visits them. Genes.[i] and Genes.[i + 1] are consecutive stops, and the tour is a closed
 // loop: the last city connects back to the first.
-let genotype () =
-    let genes = Array.init numberOfCities id |> Array.sortBy (fun _ -> System.Random.Shared.Next())
+let genotype (rng: System.Random) =
+    let genes = Array.init numberOfCities id |> Shuffle.fisherYates rng
 
     { Genes = genes
       Fitness = 0.0

@@ -7,14 +7,14 @@ var options = GeneticAlgorithm.CreateOptions<char>(
     populationSize: 100,
     selectionFn: Selection.elite,
     crossoverFn: Crossover.singlePoint,
-    mutationFn: chromosome => Mutation.randomReset(0.1, FuncConvert.FromFunc(RandomChar), chromosome),
-    reinsertionFn: (parents, offspring, leftover) => Reinsertion.elitist(0.15, parents, offspring, leftover),
+    mutationFn: (rng, chromosome) => Mutation.randomReset(0.1, FuncConvert.FromFunc<Random, char>(RandomChar), rng, chromosome),
+    reinsertionFn: (rng, parents, offspring, leftover) => Reinsertion.elitist(0.15, rng, parents, offspring, leftover),
     probe: Probes.printProgress);
 
 var solution = GeneticAlgorithm.Run(
-    genotype: () => GeneticAlgorithm.CreateChromosome(
+    genotype: rng => GeneticAlgorithm.CreateChromosome(
         Enumerable.Range(0, target.Length)
-            .Select(_ => RandomChar())
+            .Select(_ => RandomChar(rng))
             .ToArray()),
     fitnessFunction: chromosome => Fitness(chromosome.Genes),
     terminate: (population, generation, temperature) =>
@@ -23,8 +23,8 @@ var solution = GeneticAlgorithm.Run(
 
 Console.WriteLine($"Best solution: {new string(solution.Genes)} (fitness: {solution.Fitness:F6})");
 
-static char RandomChar() =>
-    (char)Random.Shared.Next('a', 'z' + 1);
+static char RandomChar(Random rng) =>
+    (char)rng.Next('a', 'z' + 1);
 
 static double Fitness(char[] genes)
 {

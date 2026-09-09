@@ -2,8 +2,8 @@ open GeneticAlgorithms
 
 let max_fitness = 1000.0
 
-let genotype () =
-    let genes = Array.init 1000 (fun _ -> System.Random.Shared.Next(0, 2))
+let genotype (rng: System.Random) =
+    let genes = Array.init 1000 (fun _ -> rng.Next(0, 2))
 
     { Genes = genes
       Fitness = 0.0

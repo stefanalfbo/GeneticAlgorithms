@@ -8,6 +8,8 @@ let private makeChromosome genes : Chromosome<int> = { Genes = genes; Fitness = 
 let private makeChromosomeWithFitness fitness genes : Chromosome<int> =
     { Genes = genes; Fitness = fitness; Age = 0 }
 
+let private rng = System.Random.Shared
+
 [<Tests>]
 let pureTests =
     testList
@@ -16,7 +18,7 @@ let pureTests =
           <| fun _ ->
               let offspring = [| makeChromosome [| 1 |]; makeChromosome [| 2 |] |]
 
-              let result = Reinsertion.``pure`` [||] offspring [||]
+              let result = Reinsertion.``pure`` rng [||] offspring [||]
 
               Expect.equal result offspring "offspring should be returned unchanged"
 
@@ -25,7 +27,7 @@ let pureTests =
               let parents = [| makeChromosome [| 9 |] |]
               let offspring = [| makeChromosome [| 1 |] |]
 
-              let result = Reinsertion.``pure`` parents offspring [||]
+              let result = Reinsertion.``pure`` rng parents offspring [||]
 
               Expect.equal result offspring "parents should not appear in the result"
 
@@ -34,7 +36,7 @@ let pureTests =
               let leftover = [| makeChromosome [| 9 |] |]
               let offspring = [| makeChromosome [| 1 |] |]
 
-              let result = Reinsertion.``pure`` [||] offspring leftover
+              let result = Reinsertion.``pure`` rng [||] offspring leftover
 
               Expect.equal result offspring "leftover should not appear in the result"
 
@@ -43,7 +45,7 @@ let pureTests =
               let parents = [| makeChromosome [| 1 |] |]
               let leftover = [| makeChromosome [| 2 |] |]
 
-              let result = Reinsertion.``pure`` parents [||] leftover
+              let result = Reinsertion.``pure`` rng parents [||] leftover
 
               Expect.isEmpty result "an empty offspring array should produce an empty next population" ]
 
@@ -56,7 +58,7 @@ let elitistTests =
               let offspring = [| makeChromosome [| 1 |]; makeChromosome [| 2 |] |]
               let parents = [| makeChromosomeWithFitness 5.0 [| 9 |] |]
 
-              let result = Reinsertion.elitist 1.0 parents offspring [||]
+              let result = Reinsertion.elitist 1.0 rng parents offspring [||]
 
               Expect.containsAll result offspring "every offspring chromosome should be in the result"
 
@@ -68,7 +70,7 @@ let elitistTests =
               let leftover =
                   [| makeChromosomeWithFitness 2.0 [| 3 |]; makeChromosomeWithFitness 1.0 [| 4 |] |]
 
-              let result = Reinsertion.elitist 0.5 parents [||] leftover
+              let result = Reinsertion.elitist 0.5 rng parents [||] leftover
 
               Expect.equal result.Length 2 "4 old chromosomes * 0.5 survival rate = 2 survivors"
 
@@ -80,7 +82,7 @@ let elitistTests =
               let leftover =
                   [| makeChromosomeWithFitness 3.0 [| 3 |]; makeChromosomeWithFitness 2.0 [| 4 |] |]
 
-              let result = Reinsertion.elitist 0.5 parents [||] leftover
+              let result = Reinsertion.elitist 0.5 rng parents [||] leftover
 
               Expect.containsAll
                   result
@@ -93,7 +95,7 @@ let elitistTests =
               let leftover = [| makeChromosomeWithFitness 4.0 [| 8 |] |]
               let offspring = [| makeChromosome [| 1 |] |]
 
-              let result = Reinsertion.elitist 0.0 parents offspring leftover
+              let result = Reinsertion.elitist 0.0 rng parents offspring leftover
 
               Expect.equal result offspring "no survivors should be carried over at a 0.0 survival rate"
 
@@ -103,7 +105,7 @@ let elitistTests =
               let leftover = [| makeChromosomeWithFitness 4.0 [| 8 |] |]
               let offspring = [| makeChromosome [| 1 |] |]
 
-              let result = Reinsertion.elitist 1.0 parents offspring leftover
+              let result = Reinsertion.elitist 1.0 rng parents offspring leftover
 
               Expect.equal result.Length 3 "offspring plus every parent and leftover chromosome should survive"
 
@@ -121,7 +123,7 @@ let uniformTests =
               let offspring = [| makeChromosome [| 1 |]; makeChromosome [| 2 |] |]
               let parents = [| makeChromosome [| 9 |] |]
 
-              let result = Reinsertion.uniform 1.0 parents offspring [||]
+              let result = Reinsertion.uniform 1.0 rng parents offspring [||]
 
               Expect.containsAll result offspring "every offspring chromosome should be in the result"
 
@@ -130,7 +132,7 @@ let uniformTests =
               let parents = [| makeChromosome [| 1 |]; makeChromosome [| 2 |] |]
               let leftover = [| makeChromosome [| 3 |]; makeChromosome [| 4 |] |]
 
-              let result = Reinsertion.uniform 0.5 parents [||] leftover
+              let result = Reinsertion.uniform 0.5 rng parents [||] leftover
 
               Expect.equal result.Length 2 "4 old chromosomes * 0.5 survival rate = 2 survivors"
 
@@ -141,7 +143,7 @@ let uniformTests =
               let old = Array.append parents leftover
 
               for _ in 1..100 do
-                  let result = Reinsertion.uniform 0.5 parents [||] leftover
+                  let result = Reinsertion.uniform 0.5 rng parents [||] leftover
 
                   Expect.all result (fun c -> Array.contains c old) "every survivor should come from parents or leftover"
 
@@ -151,7 +153,7 @@ let uniformTests =
               let leftover = [| makeChromosome [| 8 |] |]
               let offspring = [| makeChromosome [| 1 |] |]
 
-              let result = Reinsertion.uniform 0.0 parents offspring leftover
+              let result = Reinsertion.uniform 0.0 rng parents offspring leftover
 
               Expect.equal result offspring "no survivors should be carried over at a 0.0 survival rate"
 
@@ -161,7 +163,7 @@ let uniformTests =
               let leftover = [| makeChromosome [| 8 |] |]
               let offspring = [| makeChromosome [| 1 |] |]
 
-              let result = Reinsertion.uniform 1.0 parents offspring leftover
+              let result = Reinsertion.uniform 1.0 rng parents offspring leftover
 
               Expect.equal result.Length 3 "offspring plus every parent and leftover chromosome should survive"
 

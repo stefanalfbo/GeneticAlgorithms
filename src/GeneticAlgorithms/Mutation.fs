@@ -4,12 +4,17 @@ namespace GeneticAlgorithms
 /// Mutation strategies that transform a single chromosome's genes.
 /// </summary>
 /// <remarks>
-/// Every strategy has the shape <c>Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt;</c>
-/// (one chromosome in, one mutated chromosome out), so any of them can be plugged in as
-/// <c>Options.MutationFn</c>. Whether a given chromosome is mutated at all is decided
-/// separately, by <c>Genetic.mutation</c> rolling against <c>Options.MutationRate</c> - the
-/// strategies here only decide how to mutate a chromosome once that decision has already
-/// been made. <c>flip</c> and <c>flipEachGene</c> only make sense for binary genotypes
+/// Every strategy has the shape
+/// <c>System.Random -&gt; Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt;</c> (a source
+/// of randomness, then one chromosome in, one mutated chromosome out), so any of them can be
+/// plugged in as <c>Options.MutationFn</c>. Every strategy draws its randomness from the
+/// given <c>System.Random</c> rather than <c>System.Random.Shared</c>, so an entire run is
+/// reproducible end to end when <c>Options.Random</c> is seeded - <c>flip</c>, the only
+/// strategy that needs no randomness at all, still accepts it to match this shared shape.
+/// Whether a given chromosome is mutated at all is decided separately, by
+/// <c>Genetic.mutation</c> rolling against <c>Options.MutationRate</c> - the strategies here
+/// only decide how to mutate a chromosome once that decision has already been made.
+/// <c>flip</c> and <c>flipEachGene</c> only make sense for binary genotypes
 /// (<c>Chromosome&lt;int&gt;</c> with genes of <c>0</c> or <c>1</c>), so unlike
 /// <c>scramble</c> they work on <c>int</c> specifically rather than any <c>'Gene</c> type.
 /// <c>gaussian</c> is the real-valued counterpart: it only makes sense for
@@ -30,11 +35,12 @@ module Mutation =
     /// <c>NQueens</c>), unlike a strategy that replaces individual genes with newly
     /// generated values.
     /// </remarks>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with the same genes in a randomly scrambled order.</returns>
-    let scramble (chromosome: Chromosome<'Gene>) =
+    let scramble (rng: System.Random) (chromosome: Chromosome<'Gene>) =
         { chromosome with
-            Genes = chromosome.Genes |> Shuffle.fisherYates }
+            Genes = chromosome.Genes |> Shuffle.fisherYates rng }
 
     /// <summary>
     /// Mutates a chromosome by scrambling the order of genes within a random contiguous
@@ -54,15 +60,16 @@ module Mutation =
     /// <c>Options.MutationFn</c>.
     /// </remarks>
     /// <param name="n">The size of the window to scramble.</param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with a random <paramref name="n"/>-gene window scrambled in place.</returns>
-    let scrambleSlice (n: int) (chromosome: Chromosome<'Gene>) =
+    let scrambleSlice (n: int) (rng: System.Random) (chromosome: Chromosome<'Gene>) =
         let size = chromosome.Genes.Length
-        let lo = System.Random.Shared.Next(0, size - n + 1)
+        let lo = rng.Next(0, size - n + 1)
         let hi = lo + n
 
         let head = chromosome.Genes.[0 .. lo - 1]
-        let mid = chromosome.Genes.[lo .. hi - 1] |> Shuffle.fisherYates
+        let mid = chromosome.Genes.[lo .. hi - 1] |> Shuffle.fisherYates rng
         let tail = chromosome.Genes.[hi..]
 
         { chromosome with
@@ -76,11 +83,14 @@ module Mutation =
     /// This is an aggressive mutation - every gene changes, every time. See
     /// <c>flipEachGene</c> for a version that only flips each gene with some probability.
     /// Assumes every gene is <c>0</c> or <c>1</c>; for any other integer value it toggles
-    /// the lowest bit, which is unlikely to be meaningful.
+    /// the lowest bit, which is unlikely to be meaningful. Ignores <paramref name="rng"/> -
+    /// flipping every gene needs no randomness, but still accepts it to match every other
+    /// <c>MutationFn</c>'s shape.
     /// </remarks>
+    /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with every gene flipped.</returns>
-    let flip (chromosome: Chromosome<int>) =
+    let flip (_rng: System.Random) (chromosome: Chromosome<int>) =
         { chromosome with
             Genes = chromosome.Genes |> Array.map (fun gene -> gene ^^^ 1) }
 
@@ -99,13 +109,14 @@ module Mutation =
     /// <c>Mutation.flipEachGene 0.05</c>) to use this as an <c>Options&lt;int&gt;.MutationFn</c>.
     /// </remarks>
     /// <param name="rate">The probability, per gene, that it gets flipped.</param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with each gene independently flipped or left as-is.</returns>
-    let flipEachGene (rate: float) (chromosome: Chromosome<int>) =
+    let flipEachGene (rate: float) (rng: System.Random) (chromosome: Chromosome<int>) =
         { chromosome with
             Genes =
                 chromosome.Genes
-                |> Array.map (fun gene -> if System.Random.Shared.NextDouble() < rate then gene ^^^ 1 else gene) }
+                |> Array.map (fun gene -> if rng.NextDouble() < rate then gene ^^^ 1 else gene) }
 
     /// <summary>
     /// Mutates a chromosome by replacing each gene, independently with probability
@@ -124,29 +135,32 @@ module Mutation =
     /// (fitted to the chromosome's own genes), there is no way to synthesize a fresh value
     /// for an arbitrary <c>'Gene</c> without the caller supplying how to produce one - it
     /// should match whatever the genotype's own generator uses, so replaced genes stay
-    /// within the same domain. Curry both arguments (e.g.
-    /// <c>Mutation.randomReset 0.1 randomChar</c>) to use this as an
-    /// <c>Options&lt;'Gene&gt;.MutationFn</c>.
+    /// within the same domain. <paramref name="generator"/> is given the same
+    /// <paramref name="rng"/> this function receives, rather than drawing from
+    /// <c>System.Random.Shared</c> itself, so the freshly generated values stay reproducible
+    /// too. Curry both arguments (e.g. <c>Mutation.randomReset 0.1 randomChar</c>) to use
+    /// this as an <c>Options&lt;'Gene&gt;.MutationFn</c>.
     /// </remarks>
     /// <param name="rate">The probability, per gene, that it gets replaced.</param>
-    /// <param name="generator">Produces a fresh, random gene value.</param>
+    /// <param name="generator">Produces a fresh, random gene value from the given source of randomness.</param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with each gene independently replaced or left as-is.</returns>
-    let randomReset (rate: float) (generator: unit -> 'Gene) (chromosome: Chromosome<'Gene>) =
+    let randomReset (rate: float) (generator: System.Random -> 'Gene) (rng: System.Random) (chromosome: Chromosome<'Gene>) =
         { chromosome with
             Genes =
                 chromosome.Genes
-                |> Array.map (fun gene -> if System.Random.Shared.NextDouble() < rate then generator () else gene) }
+                |> Array.map (fun gene -> if rng.NextDouble() < rate then generator rng else gene) }
 
     /// Draws a random sample from a normal distribution with the given mean and variance,
-    /// via the Box-Muller transform. .NET's <c>System.Random</c> only generates uniform
-    /// samples, so there is no built-in Gaussian source to call instead. The first uniform
-    /// draw is taken as <c>1.0 - NextDouble()</c> rather than <c>NextDouble()</c> directly,
+    /// via the Box-Muller transform. <paramref name="rng"/> only generates uniform samples,
+    /// so there is no built-in Gaussian source to call instead. The first uniform draw is
+    /// taken as <c>1.0 - rng.NextDouble()</c> rather than <c>rng.NextDouble()</c> directly,
     /// so it lands in <c>(0.0, 1.0]</c> instead of <c>[0.0, 1.0)</c> - <c>NextDouble()</c>
     /// can return exactly <c>0.0</c>, which would make <c>log</c> diverge.
-    let private nextGaussian (mean: float) (variance: float) =
-        let u1 = 1.0 - System.Random.Shared.NextDouble()
-        let u2 = System.Random.Shared.NextDouble()
+    let private nextGaussian (rng: System.Random) (mean: float) (variance: float) =
+        let u1 = 1.0 - rng.NextDouble()
+        let u2 = rng.NextDouble()
         let standardNormal = sqrt (-2.0 * log u1) * cos (2.0 * System.Math.PI * u2)
         mean + sqrt variance * standardNormal
 
@@ -165,15 +179,16 @@ module Mutation =
     /// (like <c>flip</c>) always mutates every gene - there is no per-gene rate to
     /// configure.
     /// </remarks>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>
     /// A new chromosome with every gene independently resampled from a normal
     /// distribution fitted to the original genes.
     /// </returns>
-    let gaussian (chromosome: Chromosome<float>) =
+    let gaussian (rng: System.Random) (chromosome: Chromosome<float>) =
         let genes = chromosome.Genes
         let mu = Array.average genes
         let variance = genes |> Array.averageBy (fun x -> (mu - x) * (mu - x))
 
         { chromosome with
-            Genes = genes |> Array.map (fun _ -> nextGaussian mu variance) }
+            Genes = genes |> Array.map (fun _ -> nextGaussian rng mu variance) }

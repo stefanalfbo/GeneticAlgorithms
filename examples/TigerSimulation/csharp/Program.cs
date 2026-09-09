@@ -8,10 +8,10 @@ using GeneticAlgorithms;
 const int numberOfTraits = 8;
 const int lastGeneration = 1000;
 
-Func<Chromosome<int>> genotype = () =>
+Func<Random, Chromosome<int>> genotype = rng =>
     GeneticAlgorithm.CreateChromosome(
         Enumerable.Range(0, numberOfTraits)
-            .Select(_ => Random.Shared.Next(0, 2))
+            .Select(_ => rng.Next(0, 2))
             .ToArray());
 
 var traitNames = new[]
@@ -77,7 +77,7 @@ var environmentScores = new[] { tropicalScores, tundraScores };
         selectionFn: Selection.elite,
         crossoverFn: Crossover.singlePoint,
         mutationFn: Mutation.scramble,
-        reinsertionFn: (parents, offspring, leftover) => Reinsertion.elitist(0.15, parents, offspring, leftover),
+        reinsertionFn: (rng, parents, offspring, leftover) => Reinsertion.elitist(0.15, rng, parents, offspring, leftover),
         // The stats probe records every generation, unthrottled, so the CSV has complete
         // data; printProgress only runs every 100th generation so the console stays
         // readable across 1000 generations. There's no C#-facing equivalent of the F#

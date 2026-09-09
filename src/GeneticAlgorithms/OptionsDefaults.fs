@@ -33,7 +33,9 @@ module Options =
     /// <param name="populationSize">The number of chromosomes in the population.</param>
     /// <returns>
     /// An <c>Options&lt;'Gene&gt;</c> with <paramref name="populationSize"/> and default
-    /// values for every other field, ready to override via record-update syntax.
+    /// values for every other field, ready to override via record-update syntax - including
+    /// <c>Random</c> itself, e.g. <c>{ Options.create 100 with Random = System.Random(42) }</c>
+    /// for a reproducible run.
     /// </returns>
     let create (populationSize: int) : Options<'Gene> =
         { PopulationSize = populationSize
@@ -43,4 +45,5 @@ module Options =
           MutationRate = 0.05
           MutationFn = Mutation.scramble
           ReinsertionFn = Reinsertion.elitist 0.15
-          Probe = Probes.noop }
+          Probe = Probes.noop
+          Random = System.Random() }

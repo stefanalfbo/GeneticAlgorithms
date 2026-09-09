@@ -20,6 +20,8 @@ let private population =
 let private zeroFitnessPopulation =
     Array.init 4 (fun i -> { Genes = [| i |]; Fitness = 0.0; Age = 0 })
 
+let private rng = System.Random.Shared
+
 let private opts: Options<int> =
     { PopulationSize = population.Length
       SelectionRate = 0.8
@@ -28,7 +30,8 @@ let private opts: Options<int> =
       MutationRate = 0.05
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.``pure``
-      Probe = fun _ -> () }
+      Probe = fun _ -> ()
+      Random = rng }
 
 [<Tests>]
 let eliteTests =
@@ -36,13 +39,13 @@ let eliteTests =
         "Selection.elite"
         [ testCase "takes the first n chromosomes"
           <| fun _ ->
-              let result = Selection.elite population 2
+              let result = Selection.elite rng population 2
 
               Expect.equal result [| population.[0]; population.[1] |] "should keep the given order"
 
           testCase "returns n chromosomes"
           <| fun _ ->
-              let result = Selection.elite population 3
+              let result = Selection.elite rng population 3
 
               Expect.equal result.Length 3 "should return exactly n chromosomes" ]
 
@@ -52,13 +55,13 @@ let randomTests =
         "Selection.random"
         [ testCase "returns n chromosomes"
           <| fun _ ->
-              let result = Selection.random population 2
+              let result = Selection.random rng population 2
 
               Expect.equal result.Length 2 "should return exactly n chromosomes"
 
           testCase "only returns chromosomes from the population"
           <| fun _ ->
-              let result = Selection.random population 3
+              let result = Selection.random rng population 3
 
               Expect.all result (fun c -> Array.contains c population) "every chromosome should come from the population" ]
 
@@ -68,13 +71,13 @@ let tournamentTests =
         "Selection.tournament"
         [ testCase "returns n chromosomes"
           <| fun _ ->
-              let result = Selection.tournament 2 population 3
+              let result = Selection.tournament 2 rng population 3
 
               Expect.equal result.Length 3 "should return exactly n chromosomes"
 
           testCase "always picks the fittest chromosome when tournament_size covers the whole population"
           <| fun _ ->
-              let result = Selection.tournament population.Length population 3
+              let result = Selection.tournament population.Length rng population 3
 
               Expect.all result (fun c -> c = population.[0]) "every round should pick the fittest chromosome" ]
 
@@ -84,7 +87,7 @@ let tournamentNoDuplicatesTests =
         "Selection.tournamentNoDuplicates"
         [ testCase "returns n distinct chromosomes"
           <| fun _ ->
-              let result = Selection.tournamentNoDuplicates 2 population 3
+              let result = Selection.tournamentNoDuplicates 2 rng population 3
 
               Expect.equal result.Length 3 "should return exactly n chromosomes"
               Expect.equal (result |> Array.distinct |> Array.length) 3 "should not repeat chromosomes"
@@ -96,7 +99,7 @@ let tournamentNoDuplicatesTests =
               // (population.[0], confirmed deterministic by Selection.tournament's own
               // "always picks the fittest..." test above) - so n = 1 is the largest request
               // that's actually reachable here.
-              let result = Selection.tournamentNoDuplicates population.Length population 1
+              let result = Selection.tournamentNoDuplicates population.Length rng population 1
 
               Expect.equal result [| population.[0] |] "the only reachable winner is the fittest chromosome"
 
@@ -113,7 +116,7 @@ let tournamentNoDuplicatesTests =
               // instead of hanging the whole suite again.
               let task =
                   System.Threading.Tasks.Task.Run(fun () ->
-                      Selection.tournamentNoDuplicates population.Length population 2 |> ignore)
+                      Selection.tournamentNoDuplicates population.Length rng population 2 |> ignore)
 
               let completedInTime =
                   try
@@ -138,7 +141,7 @@ let rouletteTests =
           <| fun _ ->
               let single = [| makeChromosome 1.0 |]
 
-              let result = Selection.roulette single 3
+              let result = Selection.roulette rng single 3
 
               Expect.all result (fun c -> c = single.[0]) "should always return the only chromosome"
 
@@ -146,7 +149,7 @@ let rouletteTests =
           <| fun _ ->
               let weighted = [| makeChromosome 100.0; makeChromosome 0.0 |]
 
-              let result = Selection.roulette weighted 5
+              let result = Selection.roulette rng weighted 5
 
               Expect.all result (fun c -> c = weighted.[0]) "should always pick the chromosome with all the fitness"
 
@@ -158,7 +161,7 @@ let rouletteTests =
               // deterministically, rather than picking without preference. 100 picks over 4
               // chromosomes makes still seeing only 1 distinct result astronomically
               // unlikely if the fallback to uniform selection is working.
-              let result = Selection.roulette zeroFitnessPopulation 100
+              let result = Selection.roulette rng zeroFitnessPopulation 100
 
               Expect.isTrue
                   (result |> Array.distinct |> Array.length > 1)
@@ -170,21 +173,21 @@ let boltzmannTests =
         "Selection.boltzmann"
         [ testCase "returns n chromosomes"
           <| fun _ ->
-              let result = Selection.boltzmann 1.0 population 3
+              let result = Selection.boltzmann 1.0 rng population 3
 
               Expect.equal result.Length 3 "should return exactly n chromosomes"
 
           testCase "raises for a non-positive temperature"
           <| fun _ ->
               Expect.throwsT<System.ArgumentException>
-                  (fun () -> Selection.boltzmann 0.0 population 1 |> ignore)
+                  (fun () -> Selection.boltzmann 0.0 rng population 1 |> ignore)
                   "temperature must be positive"
 
           testCase "strongly favors the fittest chromosome at a low temperature"
           <| fun _ ->
               let weighted = [| makeChromosome 10.0; makeChromosome 0.0 |]
 
-              let result = Selection.boltzmann 0.1 weighted 5
+              let result = Selection.boltzmann 0.1 rng weighted 5
 
               Expect.all result (fun c -> c = weighted.[0]) "should almost always pick the fittest chromosome"
 
@@ -192,7 +195,7 @@ let boltzmannTests =
           <| fun _ ->
               let weighted = [| makeChromosome 1_000_000.0; makeChromosome 0.0 |]
 
-              let result = Selection.boltzmann 0.001 weighted 5
+              let result = Selection.boltzmann 0.001 rng weighted 5
 
               Expect.all result (fun c -> c = weighted.[0]) "should deterministically pick the fittest chromosome without producing NaN or Infinity weights" ]
 
@@ -202,7 +205,7 @@ let stochasticUniversalSamplingTests =
         "Selection.stochasticUniversalSampling"
         [ testCase "returns n chromosomes"
           <| fun _ ->
-              let result = Selection.stochasticUniversalSampling population 3
+              let result = Selection.stochasticUniversalSampling rng population 3
 
               Expect.equal result.Length 3 "should return exactly n chromosomes"
 
@@ -210,7 +213,7 @@ let stochasticUniversalSamplingTests =
           <| fun _ ->
               let single = [| makeChromosome 1.0 |]
 
-              let result = Selection.stochasticUniversalSampling single 3
+              let result = Selection.stochasticUniversalSampling rng single 3
 
               Expect.all result (fun c -> c = single.[0]) "should always return the only chromosome"
 
@@ -226,7 +229,7 @@ let stochasticUniversalSamplingTests =
                      makeChromosome 2.0
                      makeChromosome 1.0 |]
 
-              let result = Selection.stochasticUniversalSampling weighted 10
+              let result = Selection.stochasticUniversalSampling rng weighted 10
               let countOf c = result |> Array.filter ((=) c) |> Array.length
 
               Expect.equal (countOf weighted.[0]) 4 "the chromosome with 4/10 of the fitness should be picked exactly 4 times"
@@ -242,7 +245,7 @@ let stochasticUniversalSamplingTests =
               // picking without preference. 100 picks over 4 chromosomes makes still seeing
               // only 1 distinct result astronomically unlikely if the fallback to uniform
               // selection is working.
-              let result = Selection.stochasticUniversalSampling zeroFitnessPopulation 100
+              let result = Selection.stochasticUniversalSampling rng zeroFitnessPopulation 100
 
               Expect.isTrue
                   (result |> Array.distinct |> Array.length > 1)
@@ -254,7 +257,7 @@ let rankTests =
         "Selection.rank"
         [ testCase "returns n chromosomes"
           <| fun _ ->
-              let result = Selection.rank population 3
+              let result = Selection.rank rng population 3
 
               Expect.equal result.Length 3 "should return exactly n chromosomes"
 
@@ -262,7 +265,7 @@ let rankTests =
           <| fun _ ->
               let single = [| makeChromosome 1.0 |]
 
-              let result = Selection.rank single 3
+              let result = Selection.rank rng single 3
 
               Expect.all result (fun c -> c = single.[0]) "should always return the only chromosome"
 
@@ -274,7 +277,7 @@ let rankTests =
               // following failing by chance are astronomically small (~(5/6)^200 and ~0.5^200).
               let weighted = [| makeChromosome 1000.0; makeChromosome 2.0; makeChromosome 1.0 |]
 
-              let result = Selection.rank weighted 200
+              let result = Selection.rank rng weighted 200
 
               Expect.isTrue
                   (result |> Array.exists ((=) weighted.[2]))
@@ -332,7 +335,7 @@ let selectTests =
               // chromosome selected as a parent twice would then also count twice toward "old"
               // survivors, silently growing the population every generation it happens.
               let alwaysSameTwice =
-                  fun (pop: Chromosome<int> array) (n: int) -> Array.create n pop.[0]
+                  fun (_rng: System.Random) (pop: Chromosome<int> array) (n: int) -> Array.create n pop.[0]
 
               let duplicateSelectionOpts =
                   { opts with

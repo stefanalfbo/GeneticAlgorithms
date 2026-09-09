@@ -19,13 +19,14 @@ module Shuffle =
     /// Returns a new array containing the same elements as <paramref name="items"/>, in a
     /// uniformly random order.
     /// </summary>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="items">The items to shuffle.</param>
     /// <returns>A new array with the same elements as <paramref name="items"/>, shuffled.</returns>
-    let fisherYates (items: 'T array) : 'T array =
+    let fisherYates (rng: System.Random) (items: 'T array) : 'T array =
         let result = Array.copy items
 
         for i in result.Length - 1 .. -1 .. 1 do
-            let j = System.Random.Shared.Next(i + 1)
+            let j = rng.Next(i + 1)
             let temp = result.[i]
             result.[i] <- result.[j]
             result.[j] <- temp

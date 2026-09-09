@@ -2,11 +2,11 @@
 
 let target = "helloworld"
 
-let randomChar () =
-    char (System.Random.Shared.Next(int 'a', int 'z' + 1))
+let randomChar (rng: System.Random) =
+    char (rng.Next(int 'a', int 'z' + 1))
 
-let genotype () =
-    let genes = Array.init target.Length (fun _ -> randomChar ())
+let genotype (rng: System.Random) =
+    let genes = Array.init target.Length (fun _ -> randomChar rng)
 
     { Genes = genes
       Fitness = 0.0

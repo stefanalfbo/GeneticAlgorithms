@@ -2,10 +2,8 @@
 
 let target_fitness = 180.0
 
-let genotype () =
-    let rnd = System.Random.Shared
-
-    let genes = Array.init 10 (fun _ -> rnd.Next(1, 11), rnd.Next(1, 11))
+let genotype (rng: System.Random) =
+    let genes = Array.init 10 (fun _ -> rng.Next(1, 11), rng.Next(1, 11))
 
     { Genes = genes
       Fitness = 0.0

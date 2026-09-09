@@ -12,9 +12,9 @@ var options = GeneticAlgorithm.CreateOptions<int>(
     probe: Probes.printProgress);
 
 var solution = GeneticAlgorithm.Run(
-    genotype: () => GeneticAlgorithm.CreateChromosome(
+    genotype: rng => GeneticAlgorithm.CreateChromosome(
         Enumerable.Range(0, n)
-            .OrderBy(_ => Random.Shared.Next())
+            .OrderBy(_ => rng.Next())
             .ToArray()),
     fitnessFunction: chromosome =>
     {

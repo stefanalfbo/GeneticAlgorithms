@@ -23,9 +23,9 @@ module Genetic =
         let n = int (float population.Length * opts.MutationRate)
 
         population
-        |> Shuffle.fisherYates
+        |> Shuffle.fisherYates opts.Random
         |> Array.take n
-        |> Array.map opts.MutationFn
+        |> Array.map (opts.MutationFn opts.Random)
 
     let rec evolve
         (opts: Options<'Gene>)
@@ -50,14 +50,14 @@ module Genetic =
             best
         else
             let parentPairs, parents, leftover = Selection.select opts nextPopulation
-            let children = crossover opts.CrossoverFn parentPairs
+            let children = crossover (opts.CrossoverFn opts.Random) parentPairs
             let mutants = mutation opts nextPopulation
 
-            opts.ReinsertionFn parents (Array.append children mutants) leftover
+            opts.ReinsertionFn opts.Random parents (Array.append children mutants) leftover
             |> evolve opts problem (generation + 1) best.Fitness newTemperature
 
     let initialize genotype (opts: Options<'Gene>) =
-        Array.init opts.PopulationSize (fun _ -> genotype ())
+        Array.init opts.PopulationSize (fun _ -> genotype opts.Random)
 
     let run (problem: Problem<'Gene>) (opts: Options<'Gene>) =
         if opts.PopulationSize <= 0 then

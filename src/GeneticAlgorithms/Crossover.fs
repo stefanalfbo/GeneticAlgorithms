@@ -5,10 +5,14 @@ namespace GeneticAlgorithms
 /// </summary>
 /// <remarks>
 /// Every strategy has the shape
-/// <c>Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; * Chromosome&lt;'Gene&gt;</c>
-/// (two parents in, two children out), so any of them can be plugged in as
-/// <c>Options.CrossoverFn</c>. <c>singlePoint</c>, <c>multiPoint</c>, and <c>uniform</c>
-/// work for any gene array, and <c>singlePoint</c> is the usual default;
+/// <c>System.Random -&gt; Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; -&gt; Chromosome&lt;'Gene&gt; * Chromosome&lt;'Gene&gt;</c>
+/// (a source of randomness, then two parents in, two children out), so any of them can be
+/// plugged in as <c>Options.CrossoverFn</c>. Every strategy that needs randomness draws it
+/// from the given <c>System.Random</c> rather than <c>System.Random.Shared</c>, so an entire
+/// run is reproducible end to end when <c>Options.Random</c> is seeded - strategies that
+/// don't need randomness at all (<c>cycleCrossover</c>, <c>wholeArithmeticCrossover</c>)
+/// still accept it, purely to match this shared shape. <c>singlePoint</c>, <c>multiPoint</c>,
+/// and <c>uniform</c> work for any gene array, and <c>singlePoint</c> is the usual default;
 /// <c>orderOneCrossover</c> and <c>cycleCrossover</c> are built specifically for
 /// permutation genotypes - chromosomes where every gene value must appear exactly once
 /// (for example, one queen per row in <c>NQueens</c>, or one city per visit in a routing
@@ -44,6 +48,7 @@ module Crossover =
     /// every strategy besides <c>messySinglePoint</c> preserves parent length. Use
     /// <c>messySinglePoint</c> instead if children are allowed to differ in length.
     /// </remarks>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
     /// <returns>
@@ -55,7 +60,7 @@ module Crossover =
     /// Thrown when <paramref name="p1"/> and <paramref name="p2"/> have different
     /// <c>Genes</c> lengths.
     /// </exception>
-    let singlePoint (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+    let singlePoint (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         if p1.Genes.Length <> p2.Genes.Length then
             invalidArg
                 (nameof p2)
@@ -63,7 +68,7 @@ module Crossover =
                   got {p1.Genes.Length} and {p2.Genes.Length}. Use messySinglePoint instead if \
                   children are allowed to differ in length."
 
-        let crossoverPoint = System.Random.Shared.Next(1, p1.Genes.Length)
+        let crossoverPoint = rng.Next(1, p1.Genes.Length)
 
         let parent1Head = p1.Genes |> Array.take crossoverPoint
         let parent1Tail = p1.Genes |> Array.skip crossoverPoint
@@ -98,15 +103,16 @@ module Crossover =
     /// Use <c>orderOneCrossover</c> or <c>cycleCrossover</c> for permutation genotypes
     /// instead.
     /// </remarks>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
     /// <returns>
     /// Two children built from independently chosen cut points in each parent - their
     /// lengths may differ from the parents' and from each other.
     /// </returns>
-    let messySinglePoint (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
-        let cut1 = System.Random.Shared.Next(1, p1.Genes.Length)
-        let cut2 = System.Random.Shared.Next(1, p2.Genes.Length)
+    let messySinglePoint (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        let cut1 = rng.Next(1, p1.Genes.Length)
+        let cut2 = rng.Next(1, p2.Genes.Length)
 
         let c1Genes = Array.append p1.Genes.[0 .. cut1 - 1] p2.Genes.[cut2 ..]
         let c2Genes = Array.append p2.Genes.[0 .. cut2 - 1] p1.Genes.[cut1 ..]
@@ -132,18 +138,19 @@ module Crossover =
     /// an <c>Options.CrossoverFn</c>.
     /// </remarks>
     /// <param name="pointCount">The number of cut points to use.</param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
     /// <returns>
     /// Two children, with contiguous segments alternately taken from each parent between
     /// the chosen cut points.
     /// </returns>
-    let multiPoint (pointCount: int) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+    let multiPoint (pointCount: int) (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         let length = p1.Genes.Length
 
         let points =
             [| 1 .. length - 1 |]
-            |> Shuffle.fisherYates
+            |> Shuffle.fisherYates rng
             |> Array.take pointCount
             |> Array.sort
 
@@ -183,6 +190,7 @@ module Crossover =
     /// Both parents are expected to have the same, non-empty <c>Genes</c> length; this is
     /// not validated.
     /// </remarks>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
     /// <returns>
@@ -190,12 +198,12 @@ module Crossover =
     /// out with <paramref name="p2"/>'s remaining genes in order, and the second the other
     /// way around.
     /// </returns>
-    let orderOneCrossover (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+    let orderOneCrossover (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         let lim = p1.Genes.Length - 1
 
         let i1, i2 =
-            let a = System.Random.Shared.Next(1, lim + 1)
-            let b = System.Random.Shared.Next(1, lim + 1)
+            let a = rng.Next(1, lim + 1)
+            let b = rng.Next(1, lim + 1)
             if a <= b then a, b else b, a
 
         let slice1 = p1.Genes.[i1..i2]
@@ -233,8 +241,11 @@ module Crossover =
     ///
     /// Both parents are expected to have the same, non-empty <c>Genes</c> length, and to be
     /// permutations of the same gene set (every value appearing exactly once); this is not
-    /// validated.
+    /// validated. Ignores <paramref name="rng"/> - which parent contributes each cycle
+    /// alternates deterministically, but still accepts a source of randomness to match every
+    /// other <c>CrossoverFn</c>'s shape.
     /// </remarks>
+    /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
     /// <returns>
@@ -242,7 +253,7 @@ module Crossover =
     /// whichever parent alternation lands on (starting with <paramref name="p1"/> for the
     /// first cycle), and the second child copies the other parent for that same cycle.
     /// </returns>
-    let cycleCrossover (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+    let cycleCrossover (_rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         let length = p1.Genes.Length
         let indexInP2 = System.Collections.Generic.Dictionary<'Gene, int>(length)
 
@@ -295,16 +306,17 @@ module Crossover =
     /// The probability, per gene position, that the first child keeps the first parent's
     /// gene (and the second child keeps the second parent's) rather than swapping.
     /// </param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
     /// <returns>
     /// Two children, with each gene position independently drawn from one parent or the
     /// other.
     /// </returns>
-    let uniform (rate: float) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+    let uniform (rate: float) (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         let c1, c2 =
             Array.zip p1.Genes p2.Genes
-            |> Array.map (fun (x, y) -> if System.Random.Shared.NextDouble() < rate then x, y else y, x)
+            |> Array.map (fun (x, y) -> if rng.NextDouble() < rate then x, y else y, x)
             |> Array.unzip
 
         { p1 with Genes = c1 }, { p2 with Genes = c2 }
@@ -323,18 +335,20 @@ module Crossover =
     /// <paramref name="alpha"/> of 0.5 makes both children the pointwise average of the two
     /// parents; values closer to 0 or 1 bias each child toward one parent or the other.
     /// Both parents are expected to have the same <c>Genes</c> length; this is not
-    /// validated. Curry <paramref name="alpha"/> (e.g.
-    /// <c>Crossover.wholeArithmeticCrossover 0.5</c>) to use this as an
-    /// <c>Options&lt;float&gt;.CrossoverFn</c>.
+    /// validated. Ignores <paramref name="rng"/> - blending is purely arithmetic, but still
+    /// accepts a source of randomness to match every other <c>CrossoverFn</c>'s shape. Curry
+    /// <paramref name="alpha"/> (e.g. <c>Crossover.wholeArithmeticCrossover 0.5</c>) to use
+    /// this as an <c>Options&lt;float&gt;.CrossoverFn</c>.
     /// </remarks>
     /// <param name="alpha">The blend weight, typically in the range [0, 1].</param>
+    /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
     /// <returns>
     /// Two children, each gene position a weighted blend of the two parents' genes at that
     /// position.
     /// </returns>
-    let wholeArithmeticCrossover (alpha: float) (p1: Chromosome<float>) (p2: Chromosome<float>) =
+    let wholeArithmeticCrossover (alpha: float) (_rng: System.Random) (p1: Chromosome<float>) (p2: Chromosome<float>) =
         let c1, c2 =
             Array.zip p1.Genes p2.Genes
             |> Array.map (fun (x, y) -> x * alpha + y * (1.0 - alpha), x * (1.0 - alpha) + y * alpha)

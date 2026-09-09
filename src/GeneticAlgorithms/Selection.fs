@@ -2,10 +2,15 @@ namespace GeneticAlgorithms
 
 /// <summary>
 /// Parent-selection strategies for a genetic algorithm. Every selection function has the
-/// shape <c>Chromosome&lt;'Gene&gt; array -&gt; int -&gt; Chromosome&lt;'Gene&gt; array</c>
-/// (population, then the number of chromosomes to select), possibly after currying an
-/// extra leading parameter such as <c>tournamentSize</c> or <c>temperature</c> - so any of
-/// them can be plugged in as <c>Options.SelectionFn</c>.
+/// shape
+/// <c>System.Random -&gt; Chromosome&lt;'Gene&gt; array -&gt; int -&gt; Chromosome&lt;'Gene&gt; array</c>
+/// (a source of randomness, then the population, then the number of chromosomes to select),
+/// possibly after currying an extra leading parameter such as <c>tournamentSize</c> or
+/// <c>temperature</c> - so any of them can be plugged in as <c>Options.SelectionFn</c>. Every
+/// strategy draws its randomness from the given <c>System.Random</c> rather than
+/// <c>System.Random.Shared</c>, so an entire run is reproducible end to end when
+/// <c>Options.Random</c> is seeded - strategies that don't need randomness at all (<c>elite</c>)
+/// still accept it, purely to match this shared shape.
 /// </summary>
 module Selection =
 
@@ -15,21 +20,25 @@ module Selection =
     /// <remarks>
     /// Assumes <paramref name="population"/> is already sorted by descending fitness (as it
     /// is when produced by <c>Genetic.evaluate</c>); it simply takes the first
-    /// <paramref name="n"/> elements without checking fitness itself.
+    /// <paramref name="n"/> elements without checking fitness itself. Ignores
+    /// <paramref name="rng"/> - a purely deterministic selection needs no randomness, but
+    /// still accepts it to match every other <c>SelectionFn</c>'s shape.
     /// </remarks>
+    /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="population">The population to select from, sorted by descending fitness.</param>
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns>The <paramref name="n"/> fittest chromosomes, in their original order.</returns>
-    let elite (population: Chromosome<'Gene> array) (n: int) = population |> Array.take n
+    let elite (_rng: System.Random) (population: Chromosome<'Gene> array) (n: int) = population |> Array.take n
 
     /// <summary>
     /// Selects <paramref name="n"/> chromosomes uniformly at random, without regard to fitness.
     /// </summary>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> randomly chosen chromosomes.</returns>
-    let random (population: Chromosome<'Gene> array) (n: int) =
-        population |> Shuffle.fisherYates |> Array.take n
+    let random (rng: System.Random) (population: Chromosome<'Gene> array) (n: int) =
+        population |> Shuffle.fisherYates rng |> Array.take n
 
     /// <summary>
     /// Selects <paramref name="n"/> chromosomes by running <paramref name="n"/> independent
@@ -42,11 +51,12 @@ module Selection =
     /// use this as an <c>Options.SelectionFn</c>.
     /// </remarks>
     /// <param name="tournamentSize">The number of chromosomes competing in each tournament.</param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> tournament winners, possibly with duplicates.</returns>
-    let tournament (tournamentSize: int) (population: Chromosome<'Gene> array) (n: int) =
-        Array.init n (fun _ -> random population tournamentSize |> Array.maxBy (fun c -> c.Fitness))
+    let tournament (tournamentSize: int) (rng: System.Random) (population: Chromosome<'Gene> array) (n: int) =
+        Array.init n (fun _ -> random rng population tournamentSize |> Array.maxBy (fun c -> c.Fitness))
 
     /// A chromosome can only ever win a tournament of size <c>tournamentSize</c> if fewer
     /// than <c>population.Length - tournamentSize + 1</c> other chromosomes are strictly
@@ -75,6 +85,7 @@ module Selection =
     /// actually win some tournament of the given size, and fails fast instead.
     /// </remarks>
     /// <param name="tournamentSize">The number of chromosomes competing in each tournament.</param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of distinct chromosomes to select.</param>
     /// <returns><paramref name="n"/> distinct tournament winners.</returns>
@@ -82,7 +93,7 @@ module Selection =
     /// Thrown when <paramref name="n"/> exceeds the number of chromosomes that can actually
     /// win a tournament of size <paramref name="tournamentSize"/> over this population.
     /// </exception>
-    let tournamentNoDuplicates (tournamentSize: int) (population: Chromosome<'Gene> array) (n: int) =
+    let tournamentNoDuplicates (tournamentSize: int) (rng: System.Random) (population: Chromosome<'Gene> array) (n: int) =
         let maxReachable =
             population
             |> Array.distinct
@@ -99,7 +110,7 @@ module Selection =
         let selected = System.Collections.Generic.HashSet<Chromosome<'Gene>>()
 
         while selected.Count < n do
-            let chosen = random population tournamentSize |> Array.maxBy (fun c -> c.Fitness)
+            let chosen = random rng population tournamentSize |> Array.maxBy (fun c -> c.Fitness)
             selected.Add chosen |> ignore
 
         selected |> Seq.toArray
@@ -111,13 +122,13 @@ module Selection =
     /// <c>0.0</c>, so without this it would always fall through to and return the very last
     /// chromosome, deterministically, rather than choosing without preference as a total
     /// weight of zero implies.
-    let private pickWeighted (population: Chromosome<'Gene> array) (weights: float array) =
+    let private pickWeighted (rng: System.Random) (population: Chromosome<'Gene> array) (weights: float array) =
         let totalWeight = Array.sum weights
 
         if totalWeight = 0.0 then
-            population.[System.Random.Shared.Next(population.Length)]
+            population.[rng.Next(population.Length)]
         else
-            let u = System.Random.Shared.NextDouble() * totalWeight
+            let u = rng.NextDouble() * totalWeight
 
             let rec loop sum i =
                 if i >= population.Length - 1 then
@@ -145,12 +156,13 @@ module Selection =
     /// candidate happens to be infeasible - each pick falls back to uniform random selection
     /// instead of favoring any particular chromosome.
     /// </remarks>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> chromosomes, possibly with duplicates.</returns>
-    let roulette (population: Chromosome<'Gene> array) (n: int) =
+    let roulette (rng: System.Random) (population: Chromosome<'Gene> array) (n: int) =
         let weights = population |> Array.map (fun c -> c.Fitness)
-        Array.init n (fun _ -> pickWeighted population weights)
+        Array.init n (fun _ -> pickWeighted rng population weights)
 
     /// <summary>
     /// Selects <paramref name="n"/> chromosomes using Boltzmann selection: like
@@ -167,13 +179,14 @@ module Selection =
     /// <c>Selection.boltzmann 1.0</c>) to use this as an <c>Options.SelectionFn</c>.
     /// </remarks>
     /// <param name="temperature">Controls selection pressure. Must be positive.</param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> chromosomes, possibly with duplicates.</returns>
     /// <exception cref="System.ArgumentException">
     /// Thrown when <paramref name="temperature"/> is not positive.
     /// </exception>
-    let boltzmann (temperature: float) (population: Chromosome<'Gene> array) (n: int) =
+    let boltzmann (temperature: float) (rng: System.Random) (population: Chromosome<'Gene> array) (n: int) =
         if temperature <= 0.0 then
             invalidArg "temperature" "Temperature must be positive."
 
@@ -186,7 +199,7 @@ module Selection =
         let weights =
             population |> Array.map (fun c -> exp ((c.Fitness - maxFitness) / temperature))
 
-        Array.init n (fun _ -> pickWeighted population weights)
+        Array.init n (fun _ -> pickWeighted rng population weights)
 
     /// <summary>
     /// Selects <paramref name="n"/> chromosomes using stochastic universal sampling: a
@@ -203,18 +216,19 @@ module Selection =
     /// preference. This falls back to <paramref name="n"/> independent uniform random picks
     /// instead in that case.
     /// </remarks>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> chromosomes, possibly with duplicates.</returns>
-    let stochasticUniversalSampling (population: Chromosome<'Gene> array) (n: int) =
+    let stochasticUniversalSampling (rng: System.Random) (population: Chromosome<'Gene> array) (n: int) =
         let weights = population |> Array.map (fun c -> c.Fitness)
         let totalWeight = Array.sum weights
 
         if totalWeight = 0.0 then
-            Array.init n (fun _ -> population.[System.Random.Shared.Next(population.Length)])
+            Array.init n (fun _ -> population.[rng.Next(population.Length)])
         else
             let pointerDistance = totalWeight / float n
-            let start = System.Random.Shared.NextDouble() * pointerDistance
+            let start = rng.NextDouble() * pointerDistance
 
             let selected = ResizeArray<Chromosome<'Gene>>(n)
             let mutable sum = weights.[0]
@@ -241,13 +255,14 @@ module Selection =
     /// Sorts <paramref name="population"/> by fitness internally, so unlike <c>elite</c> it
     /// does not require the caller to have already sorted it.
     /// </remarks>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="population">The population to select from.</param>
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> chromosomes, possibly with duplicates.</returns>
-    let rank (population: Chromosome<'Gene> array) (n: int) =
+    let rank (rng: System.Random) (population: Chromosome<'Gene> array) (n: int) =
         let ranked = population |> Array.sortBy (fun c -> c.Fitness)
         let weights = Array.init ranked.Length (fun i -> float (i + 1))
-        Array.init n (fun _ -> pickWeighted ranked weights)
+        Array.init n (fun _ -> pickWeighted rng ranked weights)
 
     /// Splits <paramref name="population"/> into the chromosomes consumed as parents and the
     /// leftover chromosomes, given the raw (possibly value-duplicated) result of a
@@ -316,6 +331,9 @@ module Selection =
     /// <c>opts.SelectionFn</c> for more chromosomes than exist, which fails for
     /// implementations like <c>elite</c> that take a fixed slice.
     ///
+    /// <c>opts.SelectionFn</c> is called with <c>opts.Random</c>, so whichever strategy is
+    /// configured draws from the same single, run-wide source of randomness.
+    ///
     /// The second and third elements of the returned tuple (parents and leftover) always add
     /// up to <paramref name="population"/>'s length - see <c>partitionSelected</c>'s own
     /// remarks for why that isn't as simple as a value-based set difference on the raw
@@ -323,7 +341,7 @@ module Selection =
     /// possibly-duplicated selection instead, since crossover pairing is exactly where a
     /// repeated individual is meant to participate more than once.
     /// </remarks>
-    /// <param name="opts">Provides <c>SelectionRate</c> and <c>SelectionFn</c>.</param>
+    /// <param name="opts">Provides <c>SelectionRate</c>, <c>SelectionFn</c>, and <c>Random</c>.</param>
     /// <param name="population">The population to select parents from.</param>
     /// <returns>
     /// A tuple of parent pairs to crossover, the chromosomes consumed as parents, and the
@@ -336,7 +354,7 @@ module Selection =
         let n = if n % 2 = 0 then n else n + 1
         let n = min n maxN
 
-        let selected = opts.SelectionFn population n
+        let selected = opts.SelectionFn opts.Random population n
         let parents, leftover = partitionSelected population selected
 
         let parentPairs =

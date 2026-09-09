@@ -22,10 +22,10 @@ const int lastGeneration = 300;
 // population size roughly stable across generations instead of drifting like `pure` does.
 const double survivalRate = 0.15;
 
-Func<Chromosome<int>> genotype = () =>
+Func<Random, Chromosome<int>> genotype = rng =>
     GeneticAlgorithm.CreateChromosome(
         Enumerable.Range(0, numberOfGenes)
-            .Select(_ => Random.Shared.Next(0, 2))
+            .Select(_ => rng.Next(0, 2))
             .ToArray());
 
 Func<Chromosome<int>, double> fitnessFunction = chromosome => chromosome.Genes.Sum();
@@ -33,11 +33,11 @@ Func<Chromosome<int>, double> fitnessFunction = chromosome => chromosome.Genes.S
 Func<IEnumerable<Chromosome<int>>, int, double, bool> terminate =
     (_, generation, _) => generation == lastGeneration;
 
-var strategies = new (string Name, Func<Chromosome<int>[], Chromosome<int>[], Chromosome<int>[], Chromosome<int>[]> ReinsertionFn)[]
+var strategies = new (string Name, Func<Random, Chromosome<int>[], Chromosome<int>[], Chromosome<int>[], Chromosome<int>[]> ReinsertionFn)[]
 {
     ("pure", Reinsertion.pure),
-    ("elitist", (parents, offspring, leftover) => Reinsertion.elitist(survivalRate, parents, offspring, leftover)),
-    ("uniform", (parents, offspring, leftover) => Reinsertion.uniform(survivalRate, parents, offspring, leftover)),
+    ("elitist", (rng, parents, offspring, leftover) => Reinsertion.elitist(survivalRate, rng, parents, offspring, leftover)),
+    ("uniform", (rng, parents, offspring, leftover) => Reinsertion.uniform(survivalRate, rng, parents, offspring, leftover)),
 };
 
 // Runs the genetic algorithm once with the given reinsertion strategy, recording the best
@@ -45,7 +45,7 @@ var strategies = new (string Name, Func<Chromosome<int>[], Chromosome<int>[], Ch
 // side by side afterward.
 (string Name, Chromosome<int> Solution, double[] FitnessByGeneration) RunStrategy(
     string name,
-    Func<Chromosome<int>[], Chromosome<int>[], Chromosome<int>[], Chromosome<int>[]> reinsertionFn)
+    Func<Random, Chromosome<int>[], Chromosome<int>[], Chromosome<int>[], Chromosome<int>[]> reinsertionFn)
 {
     var fitnessByGeneration = new double[lastGeneration + 1];
 

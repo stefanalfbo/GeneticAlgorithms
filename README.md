@@ -155,8 +155,8 @@ Define a genotype function, a fitness function, and a termination condition, the
 ```fsharp
 open GeneticAlgorithms
 
-let genotype () =
-    let genes = Array.init 10 (fun _ -> System.Random.Shared.Next(0, 2))
+let genotype (rng: System.Random) =
+    let genes = Array.init 10 (fun _ -> rng.Next(0, 2))
 
     { Genes = genes
       Fitness = 0.0
@@ -197,7 +197,16 @@ let options =
       MutationRate = 0.05
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.elitist 0.15
-      Probe = Probes.printProgress }
+      Probe = Probes.printProgress
+      Random = System.Random() }
+```
+
+Every strategy function draws its randomness from `Options.Random` instead of `System.Random.Shared`, so seeding it makes an otherwise-identical run fully reproducible:
+
+```fsharp
+let options =
+    { Options.create 100 with
+        Random = System.Random(42) }
 ```
 
 ## C# Interop
@@ -208,12 +217,14 @@ The core API is implemented in idiomatic F#, but the library also exposes a smal
 using GeneticAlgorithms;
 
 var solution = GeneticAlgorithm.Run(
-  genotype: () => GeneticAlgorithm.CreateChromosome(new[] { Random.Shared.Next(0, 2) }),
+  genotype: rng => GeneticAlgorithm.CreateChromosome(new[] { rng.Next(0, 2) }),
   fitnessFunction: chromosome => chromosome.Genes[0],
   terminate: (population, generation, temperature) =>
     population.Any(chromosome => chromosome.Fitness >= 1.0) || generation >= 10,
   populationSize: 8);
 ```
+
+Every `Func<...>` strategy parameter (`selectionFn`, `crossoverFn`, `mutationFn`, `reinsertionFn`, and `genotype`) is passed the run's `System.Random` as its first argument. For a reproducible run from C#, use the `CreateOptions` overload that takes an explicit `random: Random` parameter instead of the `populationSize`-only convenience overloads.
 
 The `populationSize`-only overloads (this one and `CreateOptions(populationSize)`) default to `SelectionRate = 0.8`, `MutationRate = 0.05`, and `Reinsertion.elitist 0.15` - the same population-stable combination used throughout this library's own examples, so population size stays constant across generations without any further configuration.
 
@@ -262,10 +273,10 @@ This implementation is intentionally minimal. A few design choices to be aware o
 
 * `Mutation.scramble` is the default strategy, scrambling the genes within a chromosome rather than replacing individual genes with newly generated values; `Mutation.scrambleSlice` scrambles only a random window instead of the whole chromosome, `Mutation.flip`/`Mutation.flipEachGene` are binary-genotype alternatives, and `Mutation.gaussian` is a real-valued alternative that resamples every gene from a normal distribution fitted to the chromosome's own genes
 * There is no configurable crossover rate; `CrossoverFn` always runs on every selected parent pair
-* Randomness always comes from `System.Random.Shared`, so evolution runs are not seedable or reproducible
+* Every strategy function draws its randomness from the single `System.Random` instance in `Options.Random`, rather than `System.Random.Shared`, so seeding it (`{ Options.create 100 with Random = System.Random(42) }` in F#, or the `random`-taking `CreateOptions` overload in C#) makes an otherwise-identical run fully reproducible
 * `Selection.select` identifies which population slots were used as parents by comparing `Chromosome` values, not by tracking population indices - correct (see `Selection.partitionSelected`'s remarks for why), but it means every `'Gene` needs a meaningful equality, and multiple physically distinct chromosomes that happen to be value-identical are indistinguishable by design. A future major version could have `SelectionFn` return indices instead of values, sidestepping both the equality constraint and the identity ambiguity entirely - a breaking change to `Options.SelectionFn`'s shape, not attempted here
 
-Those constraints keep the code simple, but they also make the project a good starting point for extending the algorithm with richer mutation operators, alternative crossover strategies, or seedable randomness for reproducible runs.
+Those constraints keep the code simple, but they also make the project a good starting point for extending the algorithm with richer mutation operators or alternative crossover strategies.
 
 ## Repository Goals
 

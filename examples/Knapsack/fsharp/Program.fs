@@ -3,8 +3,8 @@
 let profits = [| 6; 5; 8; 9; 6; 7; 3; 1; 2; 6 |]
 let weights = [| 10; 6; 8; 7; 10; 9; 7; 11; 6; 8 |]
 
-let genotype () =
-    let genes = Array.init 10 (fun _ -> System.Random.Shared.Next(0, 2))
+let genotype (rng: System.Random) =
+    let genes = Array.init 10 (fun _ -> rng.Next(0, 2))
 
     { Genes = genes
       Fitness = 0.0

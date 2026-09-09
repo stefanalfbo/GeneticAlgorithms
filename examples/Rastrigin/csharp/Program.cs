@@ -32,10 +32,10 @@ const double upperBound = 5.12;
 var options = GeneticAlgorithm.CreateOptions<double>(
     populationSize: 150,
     selectionFn: Selection.elite,
-    crossoverFn: (p1, p2) => Crossover.wholeArithmeticCrossover(0.5, p1, p2),
+    crossoverFn: (rng, p1, p2) => Crossover.wholeArithmeticCrossover(0.5, rng, p1, p2),
     mutationFn: Mutation.gaussian,
     mutationRate: 0.15,
-    reinsertionFn: (parents, offspring, leftover) => Reinsertion.elitist(0.05, parents, offspring, leftover),
+    reinsertionFn: (rng, parents, offspring, leftover) => Reinsertion.elitist(0.05, rng, parents, offspring, leftover),
     // There's no C#-facing equivalent of the F# Probes.everyNth combinator - throttling to
     // every 30th generation is just a plain conditional in the lambda.
     probe: info =>
@@ -49,9 +49,9 @@ var options = GeneticAlgorithm.CreateOptions<double>(
 const int lastGeneration = 300;
 
 var solution = GeneticAlgorithm.Run(
-    genotype: () => GeneticAlgorithm.CreateChromosome(
+    genotype: rng => GeneticAlgorithm.CreateChromosome(
         Enumerable.Range(0, dimensions)
-            .Select(_ => lowerBound + Random.Shared.NextDouble() * (upperBound - lowerBound))
+            .Select(_ => lowerBound + rng.NextDouble() * (upperBound - lowerBound))
             .ToArray()),
     fitnessFunction: chromosome => -Rastrigin(chromosome.Genes),
     terminate: (population, generation, temperature) => generation == lastGeneration,

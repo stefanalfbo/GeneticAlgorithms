@@ -10,8 +10,8 @@ open GeneticAlgorithms
 let numberOfGenes = 500
 let maxFitness = float numberOfGenes
 
-let genotype () =
-    let genes = Array.init numberOfGenes (fun _ -> System.Random.Shared.Next(0, 2))
+let genotype (rng: System.Random) =
+    let genes = Array.init numberOfGenes (fun _ -> rng.Next(0, 2))
 
     { Genes = genes
       Fitness = 0.0
@@ -44,7 +44,7 @@ let baseOptions: Options<int> =
     { Options.create 100 with
         ReinsertionFn = Reinsertion.``pure`` }
 
-let strategies: (string * (Chromosome<int> array -> Chromosome<int> array -> Chromosome<int> array -> Chromosome<int> array)) list =
+let strategies: (string * (System.Random -> Chromosome<int> array -> Chromosome<int> array -> Chromosome<int> array -> Chromosome<int> array)) list =
     [ "pure", Reinsertion.``pure``
       "elitist", Reinsertion.elitist survivalRate
       "uniform", Reinsertion.uniform survivalRate ]

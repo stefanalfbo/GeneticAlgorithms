@@ -7,8 +7,8 @@ open GeneticAlgorithms
 // values.
 let numberOfTraits = 8
 
-let genotype () =
-    let genes = Array.init numberOfTraits (fun _ -> System.Random.Shared.Next(0, 2))
+let genotype (rng: System.Random) =
+    let genes = Array.init numberOfTraits (fun _ -> rng.Next(0, 2))
 
     { Genes = genes
       Fitness = 0.0

@@ -5,6 +5,8 @@ open GeneticAlgorithms
 
 let private makeChromosome genes : Chromosome<int> = { Genes = genes; Fitness = 0.0; Age = 0 }
 
+let private rng = System.Random.Shared
+
 let private opts: Options<int> =
     { PopulationSize = 4
       SelectionRate = 0.8
@@ -13,7 +15,8 @@ let private opts: Options<int> =
       MutationRate = 0.05
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.``pure``
-      Probe = fun _ -> () }
+      Probe = fun _ -> ()
+      Random = rng }
 
 [<Tests>]
 let evaluateTests =
@@ -56,7 +59,7 @@ let crossoverTests =
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover Crossover.singlePoint [| (p1, p2) |]
+              let result = Genetic.crossover (Crossover.singlePoint rng) [| (p1, p2) |]
 
               Expect.equal result.Length 2 "should produce two children per pair of parents"
 
@@ -65,7 +68,7 @@ let crossoverTests =
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover Crossover.singlePoint [| (p1, p2) |]
+              let result = Genetic.crossover (Crossover.singlePoint rng) [| (p1, p2) |]
 
               Expect.all result (fun c -> c.Genes.Length = p1.Genes.Length) "gene count should be preserved"
 
@@ -74,7 +77,7 @@ let crossoverTests =
               let p1 = makeChromosome [| 1; 2; 3; 4 |]
               let p2 = makeChromosome [| 5; 6; 7; 8 |]
 
-              let result = Genetic.crossover Crossover.singlePoint [| (p1, p2) |]
+              let result = Genetic.crossover (Crossover.singlePoint rng) [| (p1, p2) |]
 
               let allGenes = result |> Array.collect (fun c -> c.Genes) |> Set.ofArray
               let expectedGenes = Array.append p1.Genes p2.Genes |> Set.ofArray
@@ -126,7 +129,7 @@ let initializeTests =
           <| fun _ ->
               let mutable counter = 0
 
-              let genotype () =
+              let genotype (_: System.Random) =
                   counter <- counter + 1
                   makeChromosome [| counter |]
 
@@ -148,7 +151,7 @@ let runTests =
               let genes = [| 3; 7; 1; 9; 4 |]
               let mutable index = -1
 
-              let genotype () =
+              let genotype (_: System.Random) =
                   index <- index + 1
                   makeChromosome [| genes.[index] |]
 
@@ -170,7 +173,7 @@ let runTests =
               let mutable terminateWasCalled = false
 
               let problem =
-                  { Genotype = fun () -> makeChromosome [| 0 |]
+                  { Genotype = fun _ -> makeChromosome [| 0 |]
                     FitnessFunction = fun _ -> 0.0
                     Terminate =
                       fun _ _ _ ->
@@ -186,7 +189,7 @@ let runTests =
           testCase "regression: rejects a negative PopulationSize"
           <| fun _ ->
               let problem =
-                  { Genotype = fun () -> makeChromosome [| 0 |]
+                  { Genotype = fun _ -> makeChromosome [| 0 |]
                     FitnessFunction = fun _ -> 0.0
                     Terminate = fun _ _ _ -> true }
 
@@ -198,7 +201,7 @@ let runTests =
           <| fun _ ->
               let observedGenerations = System.Collections.Generic.List<int>()
 
-              let genotype () = makeChromosome [| 0; 1 |]
+              let genotype (_: System.Random) = makeChromosome [| 0; 1 |]
 
               let problem =
                   { Genotype = genotype
@@ -219,7 +222,7 @@ let runTests =
           <| fun _ ->
               let observedTemperatures = System.Collections.Generic.List<float>()
 
-              let genotype () = makeChromosome [| 9 |]
+              let genotype (_: System.Random) = makeChromosome [| 9 |]
 
               let problem =
                   { Genotype = genotype
@@ -248,7 +251,7 @@ let runTests =
               let observedBestFitnesses = System.Collections.Generic.List<float>()
               let observedTemperatures = System.Collections.Generic.List<float>()
 
-              let genotype () = makeChromosome [| 9 |]
+              let genotype (_: System.Random) = makeChromosome [| 9 |]
 
               let problem =
                   { Genotype = genotype
@@ -312,8 +315,8 @@ let runTests =
               // addresses. Genes are wide-range random values (not a small counter)
               // specifically so this single generation doesn't hit that separate issue by
               // coincidence.
-              let genotype () =
-                  makeChromosome (Array.init 10 (fun _ -> System.Random.Shared.Next(0, 1_000_000)))
+              let genotype (rng: System.Random) =
+                  makeChromosome (Array.init 10 (fun _ -> rng.Next(0, 1_000_000)))
 
               let observedPopulationSizes = System.Collections.Generic.List<int>()
 

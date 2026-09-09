@@ -4,6 +4,7 @@ open Expecto
 open GeneticAlgorithms
 
 let private makeChromosome genes = { Genes = genes; Fitness = 0.0; Age = 0 }
+let private rng = System.Random.Shared
 
 [<Tests>]
 let singlePointTests =
@@ -15,7 +16,7 @@ let singlePointTests =
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.singlePoint p1 p2
+                  let c1, c2 = Crossover.singlePoint rng p1 p2
 
                   Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
                   Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
@@ -26,7 +27,7 @@ let singlePointTests =
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.singlePoint p1 p2
+                  let c1, c2 = Crossover.singlePoint rng p1 p2
 
                   for i in 0 .. p1.Genes.Length - 1 do
                       Expect.isTrue
@@ -44,7 +45,7 @@ let singlePointTests =
               let p1GenesBefore = Array.copy p1.Genes
               let p2GenesBefore = Array.copy p2.Genes
 
-              Crossover.singlePoint p1 p2 |> ignore
+              Crossover.singlePoint rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged"
@@ -61,7 +62,7 @@ let singlePointTests =
               let p2 = makeChromosome [| 10; 11; 12 |]
 
               Expect.throwsT<System.ArgumentException>
-                  (fun () -> Crossover.singlePoint p1 p2 |> ignore)
+                  (fun () -> Crossover.singlePoint rng p1 p2 |> ignore)
                   "parents with different lengths should be rejected" ]
 
 [<Tests>]
@@ -74,7 +75,7 @@ let multiPointTests =
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.multiPoint 3 p1 p2
+                  let c1, c2 = Crossover.multiPoint 3 rng p1 p2
 
                   Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
                   Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
@@ -86,7 +87,7 @@ let multiPointTests =
               let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
-              let c1, c2 = Crossover.multiPoint 0 p1 p2
+              let c1, c2 = Crossover.multiPoint 0 rng p1 p2
 
               Expect.equal c1.Genes p1.Genes "first child should equal the first parent"
               Expect.equal c2.Genes p2.Genes "second child should equal the second parent"
@@ -98,7 +99,7 @@ let multiPointTests =
               let p1 = makeChromosome [| 0; 1; 2; 3 |]
               let p2 = makeChromosome [| 10; 11; 12; 13 |]
 
-              let c1, c2 = Crossover.multiPoint 3 p1 p2
+              let c1, c2 = Crossover.multiPoint 3 rng p1 p2
 
               Expect.equal c1.Genes [| 0; 11; 2; 13 |] "first child should alternate starting with the first parent"
               Expect.equal c2.Genes [| 10; 1; 12; 3 |] "second child should alternate starting with the second parent"
@@ -109,7 +110,7 @@ let multiPointTests =
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.multiPoint 3 p1 p2
+                  let c1, c2 = Crossover.multiPoint 3 rng p1 p2
 
                   for i in 0 .. p1.Genes.Length - 1 do
                       Expect.isTrue
@@ -127,7 +128,7 @@ let multiPointTests =
               let p1GenesBefore = Array.copy p1.Genes
               let p2GenesBefore = Array.copy p2.Genes
 
-              Crossover.multiPoint 3 p1 p2 |> ignore
+              Crossover.multiPoint 3 rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
@@ -147,7 +148,7 @@ let messySinglePointTests =
               let p2 = makeChromosome (Array.create 8 2)
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.messySinglePoint p1 p2
+                  let c1, c2 = Crossover.messySinglePoint rng p1 p2
 
                   let isSorted comparer (genes: int array) =
                       genes |> Array.pairwise |> Array.forall comparer
@@ -170,7 +171,7 @@ let messySinglePointTests =
 
               let lengths =
                   [ for _ in 1..100 ->
-                        let c1, c2 = Crossover.messySinglePoint p1 p2
+                        let c1, c2 = Crossover.messySinglePoint rng p1 p2
                         c1.Genes.Length, c2.Genes.Length ]
 
               Expect.isTrue
@@ -184,7 +185,7 @@ let messySinglePointTests =
               let p1GenesBefore = Array.copy p1.Genes
               let p2GenesBefore = Array.copy p2.Genes
 
-              Crossover.messySinglePoint p1 p2 |> ignore
+              Crossover.messySinglePoint rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
@@ -199,7 +200,7 @@ let orderOneCrossoverTests =
               let p2 = makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |]
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.orderOneCrossover p1 p2
+                  let c1, c2 = Crossover.orderOneCrossover rng p1 p2
 
                   Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
                   Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
@@ -211,7 +212,7 @@ let orderOneCrossoverTests =
               let expectedGenes = Set.ofArray p1.Genes
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.orderOneCrossover p1 p2
+                  let c1, c2 = Crossover.orderOneCrossover rng p1 p2
 
                   Expect.equal (Array.distinct c1.Genes |> Array.length) c1.Genes.Length "first child should have no duplicate genes"
                   Expect.equal (Array.distinct c2.Genes |> Array.length) c2.Genes.Length "second child should have no duplicate genes"
@@ -225,7 +226,7 @@ let orderOneCrossoverTests =
               let p1GenesBefore = Array.copy p1.Genes
               let p2GenesBefore = Array.copy p2.Genes
 
-              Crossover.orderOneCrossover p1 p2 |> ignore
+              Crossover.orderOneCrossover rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
@@ -239,7 +240,7 @@ let cycleCrossoverTests =
               let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
               let p2 = makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |]
 
-              let c1, c2 = Crossover.cycleCrossover p1 p2
+              let c1, c2 = Crossover.cycleCrossover rng p1 p2
 
               Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
               Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
@@ -250,7 +251,7 @@ let cycleCrossoverTests =
               let p2 = makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |]
               let expectedGenes = Set.ofArray p1.Genes
 
-              let c1, c2 = Crossover.cycleCrossover p1 p2
+              let c1, c2 = Crossover.cycleCrossover rng p1 p2
 
               Expect.equal (Array.distinct c1.Genes |> Array.length) c1.Genes.Length "first child should have no duplicate genes"
               Expect.equal (Array.distinct c2.Genes |> Array.length) c2.Genes.Length "second child should have no duplicate genes"
@@ -265,7 +266,7 @@ let cycleCrossoverTests =
               let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
               let p2 = makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |]
 
-              let c1, c2 = Crossover.cycleCrossover p1 p2
+              let c1, c2 = Crossover.cycleCrossover rng p1 p2
 
               for i in 0 .. p1.Genes.Length - 1 do
                   Expect.isTrue
@@ -285,7 +286,7 @@ let cycleCrossoverTests =
               let p1 = makeChromosome [| 8; 4; 7; 3; 6; 2; 5; 1; 9; 0 |]
               let p2 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 |]
 
-              let c1, c2 = Crossover.cycleCrossover p1 p2
+              let c1, c2 = Crossover.cycleCrossover rng p1 p2
 
               Expect.equal c1.Genes [| 8; 1; 2; 3; 4; 5; 6; 7; 9; 0 |] "first child should match the worked example"
               Expect.equal c2.Genes [| 0; 4; 7; 3; 6; 2; 5; 1; 8; 9 |] "second child should match the worked example"
@@ -297,7 +298,7 @@ let cycleCrossoverTests =
               let p1GenesBefore = Array.copy p1.Genes
               let p2GenesBefore = Array.copy p2.Genes
 
-              Crossover.cycleCrossover p1 p2 |> ignore
+              Crossover.cycleCrossover rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
@@ -312,7 +313,7 @@ let uniformTests =
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.uniform 0.5 p1 p2
+                  let c1, c2 = Crossover.uniform 0.5 rng p1 p2
 
                   Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
                   Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
@@ -324,7 +325,7 @@ let uniformTests =
               let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
-              let c1, c2 = Crossover.uniform 1.0 p1 p2
+              let c1, c2 = Crossover.uniform 1.0 rng p1 p2
 
               Expect.equal c1.Genes p1.Genes "first child should always take the first parent's genes"
               Expect.equal c2.Genes p2.Genes "second child should always take the second parent's genes"
@@ -336,7 +337,7 @@ let uniformTests =
               let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
-              let c1, c2 = Crossover.uniform 0.0 p1 p2
+              let c1, c2 = Crossover.uniform 0.0 rng p1 p2
 
               Expect.equal c1.Genes p2.Genes "first child should always take the second parent's genes"
               Expect.equal c2.Genes p1.Genes "second child should always take the first parent's genes"
@@ -347,7 +348,7 @@ let uniformTests =
               let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
 
               for _ in 1..100 do
-                  let c1, c2 = Crossover.uniform 0.5 p1 p2
+                  let c1, c2 = Crossover.uniform 0.5 rng p1 p2
 
                   for i in 0 .. p1.Genes.Length - 1 do
                       if c1.Genes.[i] = p1.Genes.[i] then
@@ -363,7 +364,7 @@ let uniformTests =
               let p1GenesBefore = Array.copy p1.Genes
               let p2GenesBefore = Array.copy p2.Genes
 
-              Crossover.uniform 0.5 p1 p2 |> ignore
+              Crossover.uniform 0.5 rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
@@ -377,7 +378,7 @@ let wholeArithmeticCrossoverTests =
               let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
               let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
 
-              let c1, c2 = Crossover.wholeArithmeticCrossover 0.3 p1 p2
+              let c1, c2 = Crossover.wholeArithmeticCrossover 0.3 rng p1 p2
 
               Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
               Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
@@ -389,7 +390,7 @@ let wholeArithmeticCrossoverTests =
               let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
               let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
 
-              let c1, c2 = Crossover.wholeArithmeticCrossover 1.0 p1 p2
+              let c1, c2 = Crossover.wholeArithmeticCrossover 1.0 rng p1 p2
 
               Expect.equal c1.Genes p1.Genes "first child should equal the first parent"
               Expect.equal c2.Genes p2.Genes "second child should equal the second parent"
@@ -399,7 +400,7 @@ let wholeArithmeticCrossoverTests =
               let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
               let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
 
-              let c1, c2 = Crossover.wholeArithmeticCrossover 0.0 p1 p2
+              let c1, c2 = Crossover.wholeArithmeticCrossover 0.0 rng p1 p2
 
               Expect.equal c1.Genes p2.Genes "first child should equal the second parent"
               Expect.equal c2.Genes p1.Genes "second child should equal the first parent"
@@ -410,7 +411,7 @@ let wholeArithmeticCrossoverTests =
               let p2 = makeChromosome [| 10.0; 11.0; 12.0; 13.0 |]
               let expected = [| 5.0; 6.0; 7.0; 8.0 |]
 
-              let c1, c2 = Crossover.wholeArithmeticCrossover 0.5 p1 p2
+              let c1, c2 = Crossover.wholeArithmeticCrossover 0.5 rng p1 p2
 
               Expect.equal c1.Genes expected "first child should be the pointwise average"
               Expect.equal c2.Genes expected "second child should be the pointwise average"
@@ -422,7 +423,7 @@ let wholeArithmeticCrossoverTests =
               let p1GenesBefore = Array.copy p1.Genes
               let p2GenesBefore = Array.copy p2.Genes
 
-              Crossover.wholeArithmeticCrossover 0.3 p1 p2 |> ignore
+              Crossover.wholeArithmeticCrossover 0.3 rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
               Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]

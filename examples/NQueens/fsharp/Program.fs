@@ -3,8 +3,8 @@ open GeneticAlgorithms
 let n = 8
 let max_fitness = float n
 
-let genotype () =
-    let genes = Array.init n id |> Array.sortBy (fun _ -> System.Random.Shared.Next())
+let genotype (rng: System.Random) =
+    let genes = Array.init n id |> Shuffle.fisherYates rng
 
     { Genes = genes
       Fitness = 0.0

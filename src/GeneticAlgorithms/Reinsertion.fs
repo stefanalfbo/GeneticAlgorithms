@@ -6,13 +6,17 @@ namespace GeneticAlgorithms
 /// </summary>
 /// <remarks>
 /// Every strategy has the shape
-/// <c>Chromosome&lt;'Gene&gt; array -&gt; Chromosome&lt;'Gene&gt; array -&gt; Chromosome&lt;'Gene&gt; array -&gt; Chromosome&lt;'Gene&gt; array</c>
-/// (parents, then offspring, then leftover, producing the next population), so any of them
-/// can be plugged in as <c>Options.ReinsertionFn</c>. <c>Genetic.evolve</c> calls the
-/// configured strategy once per generation, after selection, crossover, and mutation have
-/// already produced <c>offspring</c> (this generation's crossover children together with
-/// <c>Genetic.mutation</c>'s mutants) - the strategies here only decide how the three
-/// groups recombine, not how any of them were produced.
+/// <c>System.Random -&gt; Chromosome&lt;'Gene&gt; array -&gt; Chromosome&lt;'Gene&gt; array -&gt; Chromosome&lt;'Gene&gt; array -&gt; Chromosome&lt;'Gene&gt; array</c>
+/// (a source of randomness, then parents, then offspring, then leftover, producing the next
+/// population), so any of them can be plugged in as <c>Options.ReinsertionFn</c>. Every
+/// strategy that needs randomness draws it from the given <c>System.Random</c> rather than
+/// <c>System.Random.Shared</c>, so an entire run is reproducible end to end when
+/// <c>Options.Random</c> is seeded - strategies that don't need randomness at all
+/// (<c>pure</c>, <c>elitist</c>) still accept it, purely to match this shared shape.
+/// <c>Genetic.evolve</c> calls the configured strategy once per generation, after selection,
+/// crossover, and mutation have already produced <c>offspring</c> (this generation's
+/// crossover children together with <c>Genetic.mutation</c>'s mutants) - the strategies here
+/// only decide how the three groups recombine, not how any of them were produced.
 /// </remarks>
 module Reinsertion =
 
@@ -30,13 +34,16 @@ module Reinsertion =
     /// <paramref name="leftover"/> shrinks the population every generation; at
     /// <c>SelectionRate = 1.0</c> (no leftover to lose), the mutants add extra individuals
     /// on top of a full set of crossover children, so the population instead grows without
-    /// bound, generation over generation.
+    /// bound, generation over generation. Ignores <paramref name="rng"/> - still accepts it
+    /// to match every other <c>ReinsertionFn</c>'s shape.
     /// </remarks>
+    /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="parents">The chromosomes selected as crossover parents this generation. Ignored.</param>
     /// <param name="offspring">This generation's crossover children and mutants.</param>
     /// <param name="leftover">The chromosomes not selected as parents this generation. Ignored.</param>
     /// <returns><paramref name="offspring"/>, unchanged.</returns>
     let ``pure``
+        (_rng: System.Random)
         (_parents: Chromosome<'Gene> array)
         (offspring: Chromosome<'Gene> array)
         (_leftover: Chromosome<'Gene> array)
@@ -59,11 +66,14 @@ module Reinsertion =
     /// <c>survivalRate</c> around <c>1.0 - SelectionRate - MutationRate</c> keeps the
     /// population roughly stable rather than drifting, as <c>pure</c> does. Assumes
     /// <paramref name="survivalRate"/> is in <c>[0, 1]</c>; this is not validated - a value
-    /// above <c>1.0</c> would ask for more survivors than exist. Curry
-    /// <paramref name="survivalRate"/> (e.g. <c>Reinsertion.elitist 0.15</c>) to use this as
-    /// an <c>Options.ReinsertionFn</c>.
+    /// above <c>1.0</c> would ask for more survivors than exist. Ignores
+    /// <paramref name="rng"/> - which survivors are fittest is deterministic, but still
+    /// accepts a source of randomness to match every other <c>ReinsertionFn</c>'s shape.
+    /// Curry <paramref name="survivalRate"/> (e.g. <c>Reinsertion.elitist 0.15</c>) to use
+    /// this as an <c>Options.ReinsertionFn</c>.
     /// </remarks>
     /// <param name="survivalRate">The fraction of the previous generation to carry over as survivors.</param>
+    /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="parents">The chromosomes selected as crossover parents this generation.</param>
     /// <param name="offspring">This generation's crossover children and mutants.</param>
     /// <param name="leftover">The chromosomes not selected as parents this generation.</param>
@@ -73,6 +83,7 @@ module Reinsertion =
     /// </returns>
     let elitist
         (survivalRate: float)
+        (_rng: System.Random)
         (parents: Chromosome<'Gene> array)
         (offspring: Chromosome<'Gene> array)
         (leftover: Chromosome<'Gene> array)
@@ -105,6 +116,7 @@ module Reinsertion =
     /// an <c>Options.ReinsertionFn</c>.
     /// </remarks>
     /// <param name="survivalRate">The fraction of the previous generation to carry over as survivors.</param>
+    /// <param name="rng">The source of randomness.</param>
     /// <param name="parents">The chromosomes selected as crossover parents this generation.</param>
     /// <param name="offspring">This generation's crossover children and mutants.</param>
     /// <param name="leftover">The chromosomes not selected as parents this generation.</param>
@@ -114,6 +126,7 @@ module Reinsertion =
     /// </returns>
     let uniform
         (survivalRate: float)
+        (rng: System.Random)
         (parents: Chromosome<'Gene> array)
         (offspring: Chromosome<'Gene> array)
         (leftover: Chromosome<'Gene> array)
@@ -121,6 +134,6 @@ module Reinsertion =
         let old = Array.append parents leftover
         let n = int (float old.Length * survivalRate)
 
-        let survivors = old |> Shuffle.fisherYates |> Array.take n
+        let survivors = old |> Shuffle.fisherYates rng |> Array.take n
 
         Array.append offspring survivors

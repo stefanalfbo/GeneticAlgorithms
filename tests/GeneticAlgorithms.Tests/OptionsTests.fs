@@ -3,6 +3,8 @@ module GeneticAlgorithms.Tests.OptionsTests
 open Expecto
 open GeneticAlgorithms
 
+let private rng = System.Random.Shared
+
 [<Tests>]
 let createTests =
     testList
@@ -19,6 +21,17 @@ let createTests =
 
               Expect.equal result.SelectionRate 0.8 "selection rate should match the C# facade's default"
               Expect.equal result.MutationRate 0.05 "mutation rate should match the C# facade's default"
+              Expect.isFalse (isNull result.Random) "a default Random instance should be supplied"
+
+          testCase "regression: Random can be overridden for a reproducible run"
+          <| fun _ ->
+              // The whole point of Options.Random - a seeded Random passed via ordinary
+              // record-update syntax should be the one actually stored, not silently
+              // replaced by a fresh instance.
+              let seeded = System.Random(42)
+              let result: Options<int> = { Options.create 10 with Random = seeded }
+
+              Expect.isTrue (obj.ReferenceEquals(result.Random, seeded)) "the supplied Random instance should be used as-is"
 
           testCase "defaults to a population-stable reinsertion strategy, not pure"
           <| fun _ ->
@@ -36,7 +49,7 @@ let createTests =
 
               let offspring = [| { Genes = [| 99 |]; Fitness = 99.0; Age = 0 } |]
 
-              let nextGeneration = result.ReinsertionFn parents offspring leftover
+              let nextGeneration = result.ReinsertionFn rng parents offspring leftover
 
               Expect.isTrue
                   (nextGeneration.Length > offspring.Length)
@@ -44,7 +57,8 @@ let createTests =
 
           testCase "individual fields can be overridden via record-update syntax, leaving the rest at their defaults"
           <| fun _ ->
-              let customSelection (population: Chromosome<int> array) (n: int) = population |> Array.rev |> Array.take n
+              let customSelection (_: System.Random) (population: Chromosome<int> array) (n: int) =
+                  population |> Array.rev |> Array.take n
               let mutable observedGenerations = 0
 
               let result =
@@ -59,7 +73,7 @@ let createTests =
                   Array.init 3 (fun i -> { Genes = [| i |]; Fitness = 0.0; Age = 0 })
 
               Expect.equal
-                  (result.SelectionFn population 1)
+                  (result.SelectionFn rng population 1)
                   [| population.[2] |]
                   "the overridden selection function should be the one actually used"
 

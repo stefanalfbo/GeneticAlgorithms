@@ -2,8 +2,8 @@ open GeneticAlgorithms
 
 let numberOfClasses = 10
 
-let genotype () =
-    let genes = Array.init numberOfClasses (fun _ -> System.Random.Shared.Next(0, 2))
+let genotype (rng: System.Random) =
+    let genes = Array.init numberOfClasses (fun _ -> rng.Next(0, 2))
 
     { Genes = genes
       Fitness = 0.0

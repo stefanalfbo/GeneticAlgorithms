@@ -9,13 +9,13 @@ var options = GeneticAlgorithm.CreateOptions<int>(
     selectionFn: Selection.elite,
     crossoverFn: Crossover.singlePoint,
     mutationFn: Mutation.scramble,
-    reinsertionFn: (parents, offspring, leftover) => Reinsertion.elitist(0.15, parents, offspring, leftover),
+    reinsertionFn: (rng, parents, offspring, leftover) => Reinsertion.elitist(0.15, rng, parents, offspring, leftover),
     probe: Probes.printProgress);
 
 var solution = GeneticAlgorithm.Run(
-    genotype: () => GeneticAlgorithm.CreateChromosome(
+    genotype: rng => GeneticAlgorithm.CreateChromosome(
         Enumerable.Range(0, 10)
-            .Select(_ => Random.Shared.Next(0, 2))
+            .Select(_ => rng.Next(0, 2))
             .ToArray()),
     fitnessFunction: chromosome =>
     {

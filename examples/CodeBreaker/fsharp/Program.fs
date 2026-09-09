@@ -14,8 +14,8 @@ let chromosomeKey (chromosome: Chromosome<int>) =
     chromosome.Genes
     |> Array.fold (fun key gene -> (key <<< 1) ||| gene) 0
 
-let genotype () =
-    { Genes = Array.init target.Length (fun _ -> Random.Shared.Next(0, 2))
+let genotype (rng: Random) =
+    { Genes = Array.init target.Length (fun _ -> rng.Next(0, 2))
       Fitness = 0.0
       Age = 0 }
 

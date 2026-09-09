@@ -9,10 +9,9 @@ let private upperBound = 5.12
 
 // Each chromosome's genes are 5 independent real-valued coordinates within the standard
 // Rastrigin domain.
-let genotype () =
+let genotype (rng: System.Random) =
     let genes =
-        Array.init dimensions (fun _ ->
-            lowerBound + System.Random.Shared.NextDouble() * (upperBound - lowerBound))
+        Array.init dimensions (fun _ -> lowerBound + rng.NextDouble() * (upperBound - lowerBound))
 
     { Genes = genes
       Fitness = 0.0
