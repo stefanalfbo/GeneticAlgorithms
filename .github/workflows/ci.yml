@@ -49,3 +49,23 @@ jobs:
           files: coverage.cobertura.xml
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Pack candidate NuGet package
+        run: >
+          dotnet pack src/GeneticAlgorithms
+          --configuration Release
+          -p:PackageVersion=0.0.0-ci.${{ github.run_id }}
+          -o ${{ github.workspace }}/artifacts/nuget
+
+      - name: Restore NuGet smoke test against the packed candidate
+        run: >
+          dotnet restore tests/GeneticAlgorithms.NuGetSmoke
+          -p:GeneticAlgorithmsVersion=0.0.0-ci.${{ github.run_id }}
+          --source ${{ github.workspace }}/artifacts/nuget
+          --source https://api.nuget.org/v3/index.json
+
+      - name: Run NuGet smoke test
+        run: >
+          dotnet run --project tests/GeneticAlgorithms.NuGetSmoke
+          --configuration Release --no-restore
+          -p:GeneticAlgorithmsVersion=0.0.0-ci.${{ github.run_id }}
