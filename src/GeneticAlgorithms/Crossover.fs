@@ -34,7 +34,15 @@ module Crossover =
     /// <remarks>
     /// Works for any gene array, but does not preserve permutations - if the parents are
     /// permutations of the same values (as in <c>NQueens</c>), the children generally
-    /// won't be. Use <c>orderOneCrossover</c> for permutation genotypes instead.
+    /// won't be. Use <c>orderOneCrossover</c> for permutation genotypes instead. Both parents
+    /// must have the same <c>Genes</c> length - the single cut point is drawn from
+    /// <paramref name="p1"/>'s length and applied to both parents, so unlike this module's
+    /// other same-length-assuming strategies, this is validated rather than merely assumed:
+    /// silently returning children whose length doesn't match either parent (or, if
+    /// <paramref name="p1"/> is the longer parent, crashing with an unrelated "array too
+    /// short" exception instead) would otherwise contradict this module's own guarantee that
+    /// every strategy besides <c>messySinglePoint</c> preserves parent length. Use
+    /// <c>messySinglePoint</c> instead if children are allowed to differ in length.
     /// </remarks>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
@@ -43,7 +51,18 @@ module Crossover =
     /// <paramref name="p2"/>'s tail, and the second with <paramref name="p2"/>'s head and
     /// <paramref name="p1"/>'s tail.
     /// </returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="p1"/> and <paramref name="p2"/> have different
+    /// <c>Genes</c> lengths.
+    /// </exception>
     let singlePoint (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        if p1.Genes.Length <> p2.Genes.Length then
+            invalidArg
+                (nameof p2)
+                $"Both parents must have the same Genes length to preserve it in the children; \
+                  got {p1.Genes.Length} and {p2.Genes.Length}. Use messySinglePoint instead if \
+                  children are allowed to differ in length."
+
         let crossoverPoint = System.Random.Shared.Next(1, p1.Genes.Length)
 
         let parent1Head = p1.Genes |> Array.take crossoverPoint

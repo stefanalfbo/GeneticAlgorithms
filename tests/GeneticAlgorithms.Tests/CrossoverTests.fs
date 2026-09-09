@@ -6,6 +6,65 @@ open GeneticAlgorithms
 let private makeChromosome genes = { Genes = genes; Fitness = 0.0; Age = 0 }
 
 [<Tests>]
+let singlePointTests =
+    testList
+        "Crossover.singlePoint"
+        [ testCase "children have the same length as the parents"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+
+              for _ in 1..100 do
+                  let c1, c2 = Crossover.singlePoint p1 p2
+
+                  Expect.equal c1.Genes.Length p1.Genes.Length "first child should match parent length"
+                  Expect.equal c2.Genes.Length p2.Genes.Length "second child should match parent length"
+
+          testCase "at every position, each child's gene comes from one of the two parents"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+
+              for _ in 1..100 do
+                  let c1, c2 = Crossover.singlePoint p1 p2
+
+                  for i in 0 .. p1.Genes.Length - 1 do
+                      Expect.isTrue
+                          (c1.Genes.[i] = p1.Genes.[i] || c1.Genes.[i] = p2.Genes.[i])
+                          "the first child's gene should come from one of the two parents"
+
+                      Expect.isTrue
+                          (c2.Genes.[i] = p1.Genes.[i] || c2.Genes.[i] = p2.Genes.[i])
+                          "the second child's gene should come from one of the two parents"
+
+          testCase "does not mutate the parent chromosomes"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+              let p1GenesBefore = Array.copy p1.Genes
+              let p2GenesBefore = Array.copy p2.Genes
+
+              Crossover.singlePoint p1 p2 |> ignore
+
+              Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged"
+
+          testCase "regression: rejects parents with different lengths"
+          <| fun _ ->
+              // Bug: singlePoint used to draw its cut point from p1's length alone and apply
+              // it to both parents regardless of p2's actual length, silently returning
+              // children whose lengths didn't match either parent (or crashing with an
+              // unrelated "array too short" exception if p1 was the longer parent) - breaking
+              // this module's own documented guarantee that every strategy besides
+              // messySinglePoint preserves parent length.
+              let p1 = makeChromosome [| 0; 1 |]
+              let p2 = makeChromosome [| 10; 11; 12 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.singlePoint p1 p2 |> ignore)
+                  "parents with different lengths should be rejected" ]
+
+[<Tests>]
 let multiPointTests =
     testList
         "Crossover.multiPoint"
