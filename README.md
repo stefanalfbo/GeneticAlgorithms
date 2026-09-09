@@ -173,10 +173,22 @@ let problem: Problem<int> =
       FitnessFunction = fitness_function
       Terminate = terminate }
 
+// Options.create fills in every field except PopulationSize with sensible defaults -
 // SelectionRate 0.8 + MutationRate 0.05 + Reinsertion.elitist's survivalRate 0.15 sum to
-// 1.0, which keeps population size stable across generations - `` Reinsertion.`pure` ``
-// would discard SelectionRate's 20% leftover with nothing to replace it beyond this
-// generation's mutants, shrinking the population by ~15% every generation.
+// 1.0, which keeps population size stable across generations (`` Reinsertion.`pure` ``, the
+// simplest strategy, would discard SelectionRate's 20% leftover with nothing to replace it
+// beyond this generation's mutants, shrinking the population by ~15% every generation).
+// Override only what you need via ordinary record-update syntax.
+let options =
+    { Options.create 100 with
+        Probe = Probes.printProgress }
+
+let solution = Genetic.run problem options
+```
+
+Building the record from scratch, field by field, works just as well if you'd rather not rely on `Options.create`'s defaults:
+
+```fsharp
 let options =
     { PopulationSize = 100
       SelectionRate = 0.8
@@ -186,8 +198,6 @@ let options =
       MutationFn = Mutation.scramble
       ReinsertionFn = Reinsertion.elitist 0.15
       Probe = Probes.printProgress }
-
-let solution = Genetic.run problem options
 ```
 
 ## C# Interop
@@ -244,6 +254,7 @@ The test project verifies the main building blocks of the algorithm:
 * `Mutation.flip` flips every gene, and `Mutation.flipEachGene` flips each gene independently at its own probability
 * `Mutation.gaussian` preserves chromosome length and its resampled genes have approximately the same mean as the original genes
 * `Distance.jaroSimilarity` matches known reference values (for example, the standard `MARTHA`/`MARHTA` example), and is symmetric
+* `Options.create` fills every field but `PopulationSize` with the same defaults as `GeneticAlgorithm.CreateOptions`, and every field can still be overridden via ordinary record-update syntax
 
 ## Design Notes
 

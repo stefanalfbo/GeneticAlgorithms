@@ -28,6 +28,7 @@
     <Compile Include="Probes.fs" />
     <Compile Include="Options.fs" />
     <Compile Include="Selection.fs" />
+    <Compile Include="OptionsDefaults.fs" />
     <Compile Include="Genetic.fs" />
     <Compile Include="Interop.fs" />
   </ItemGroup>
