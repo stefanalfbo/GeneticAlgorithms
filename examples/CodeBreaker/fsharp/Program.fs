@@ -34,14 +34,10 @@ let problem: Problem<int> =
       Terminate = terminate }
 
 let options =
-    { PopulationSize = 100
-      SelectionRate = 1.0
-      SelectionFn = Selection.elite
-      CrossoverFn = Crossover.singlePoint
-      MutationRate = 0.05
-      MutationFn = Mutation.scramble
-      ReinsertionFn = Reinsertion.``pure``
-      Probe = Probes.printProgress }
+    { Options.create 100 with
+        SelectionRate = 1.0
+        ReinsertionFn = Reinsertion.``pure``
+        Probe = Probes.printProgress }
 
 let solution = Genetic.run problem options
 let key = chromosomeKey solution

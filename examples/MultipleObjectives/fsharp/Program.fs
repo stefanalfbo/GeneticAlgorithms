@@ -24,14 +24,10 @@ let problem: Problem<int * int> =
       Terminate = terminate }
 
 let options =
-    { PopulationSize = 124
-      SelectionRate = 1.0
-      SelectionFn = Selection.elite
-      CrossoverFn = Crossover.singlePoint
-      MutationRate = 0.05
-      MutationFn = Mutation.scramble
-      ReinsertionFn = Reinsertion.``pure``
-      Probe = Probes.printProgress }
+    { Options.create 124 with
+        SelectionRate = 1.0
+        ReinsertionFn = Reinsertion.``pure``
+        Probe = Probes.printProgress }
 
 let solution = Genetic.run problem options
 

@@ -61,14 +61,12 @@ let problem: Problem<float> =
 // gene from a normal distribution fitted to the chromosome's own genes, so exploration
 // naturally narrows as the population converges toward the optimum.
 let options: Options<float> =
-    { PopulationSize = 150
-      SelectionRate = 0.8
-      SelectionFn = Selection.elite
-      CrossoverFn = Crossover.wholeArithmeticCrossover 0.5
-      MutationRate = 0.15
-      MutationFn = Mutation.gaussian
-      ReinsertionFn = Reinsertion.elitist 0.05
-      Probe = Probes.everyNth 30 (fun info -> printfn "Current best f(x): %.4f" (-info.Best.Fitness)) }
+    { Options.create 150 with
+        CrossoverFn = Crossover.wholeArithmeticCrossover 0.5
+        MutationRate = 0.15
+        MutationFn = Mutation.gaussian
+        ReinsertionFn = Reinsertion.elitist 0.05
+        Probe = Probes.everyNth 30 (fun info -> printfn "Current best f(x): %.4f" (-info.Best.Fitness)) }
 
 let solution = Genetic.run problem options
 

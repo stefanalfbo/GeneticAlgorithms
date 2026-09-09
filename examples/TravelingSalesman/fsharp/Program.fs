@@ -55,26 +55,17 @@ let problem: Problem<int> =
       FitnessFunction = fitnessFunction
       Terminate = terminate }
 
-// SelectionRate leaves 20% of the population as leftover each generation; elitist
-// reinsertion carries the fittest 15% of (parents + leftover) forward alongside this
-// generation's offspring, so 0.8 + 0.05 (MutationRate) + 0.15 keeps the population size
-// roughly stable across all 500 generations - the simpler `pure` reinsertion strategy
-// would let the population grow without bound over a run this long, since nothing ever
-// discards the extra mutants it adds each generation.
+// Options.create's defaults (SelectionRate 0.8 + MutationRate 0.05 + Reinsertion.elitist's
+// survivalRate 0.15 summing to 1.0) keep population size stable across all 500 generations.
 //
-// CrossoverFn is orderOneCrossover rather than the library's default singlePoint: genes
-// here are a permutation (each city visited exactly once), and a single-point cut would
-// generally produce a tour with a city missing and another repeated.
+// CrossoverFn is orderOneCrossover rather than the default singlePoint: genes here are a
+// permutation (each city visited exactly once), and a single-point cut would generally
+// produce a tour with a city missing and another repeated.
 let options: Options<int> =
-    { PopulationSize = 100
-      SelectionRate = 0.8
-      SelectionFn = Selection.elite
-      CrossoverFn = Crossover.orderOneCrossover
-      MutationRate = 0.05
-      MutationFn = Mutation.scramble
-      ReinsertionFn = Reinsertion.elitist 0.15
-      Probe =
-        Probes.everyNth 50 (fun info -> printfn "Current best distance: %.2f" (-info.Best.Fitness)) }
+    { Options.create 100 with
+        CrossoverFn = Crossover.orderOneCrossover
+        Probe =
+            Probes.everyNth 50 (fun info -> printfn "Current best distance: %.2f" (-info.Best.Fitness)) }
 
 let solution = Genetic.run problem options
 

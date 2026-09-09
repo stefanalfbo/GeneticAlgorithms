@@ -41,14 +41,8 @@ let problem: Problem<int> =
 let survivalRate = 0.15
 
 let baseOptions: Options<int> =
-    { PopulationSize = 100
-      SelectionRate = 0.8
-      SelectionFn = Selection.elite
-      CrossoverFn = Crossover.singlePoint
-      MutationRate = 0.05
-      MutationFn = Mutation.scramble
-      ReinsertionFn = Reinsertion.``pure``
-      Probe = Probes.noop }
+    { Options.create 100 with
+        ReinsertionFn = Reinsertion.``pure`` }
 
 let strategies: (string * (Chromosome<int> array -> Chromosome<int> array -> Chromosome<int> array -> Chromosome<int> array)) list =
     [ "pure", Reinsertion.``pure``

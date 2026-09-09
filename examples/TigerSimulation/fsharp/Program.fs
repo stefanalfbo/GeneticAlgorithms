@@ -60,20 +60,11 @@ let lastGeneration = 1000
 let terminate (_population: seq<Chromosome<int>>) (generation: int) (_temperature: float) =
     generation = lastGeneration
 
-// SelectionRate leaves 20% of the population as leftover each generation; elitist
-// reinsertion carries the fittest 15% of (parents + leftover) forward alongside this
-// generation's offspring, so 0.8 + 0.05 (MutationRate) + 0.15 keeps the population size
-// roughly stable across all 1000 generations instead of collapsing, the way the simplest
-// `pure` reinsertion strategy would over a run this long.
-let baseOptions: Options<int> =
-    { PopulationSize = 100
-      SelectionRate = 0.8
-      SelectionFn = Selection.elite
-      CrossoverFn = Crossover.singlePoint
-      MutationRate = 0.05
-      MutationFn = Mutation.scramble
-      ReinsertionFn = Reinsertion.elitist 0.15
-      Probe = Probes.noop }
+// Options.create's defaults (SelectionRate 0.8 + MutationRate 0.05 + Reinsertion.elitist's
+// survivalRate 0.15 summing to 1.0) keep population size stable across all 1000
+// generations instead of collapsing, the way the simplest `pure` reinsertion strategy
+// would over a run this long.
+let baseOptions: Options<int> = Options.create 100
 
 /// One generation's tracked statistics: mean fitness and mean age across the whole
 /// population, plus the fittest chromosome's fitness for that generation.
