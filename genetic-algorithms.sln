@@ -61,6 +61,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "csharp", "csharp", "{6D0A0E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rastrigin.CSharp", "examples\Rastrigin\csharp\Rastrigin.CSharp.csproj", "{3F495493-070D-41F9-AAE9-A48F7BB6F5A8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TravelingSalesman.CSharp", "examples\TravelingSalesman\csharp\TravelingSalesman.CSharp.csproj", "{7DF15E24-CB4F-4111-858A-4E27C20E1812}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -347,6 +349,18 @@ Global
 		{3F495493-070D-41F9-AAE9-A48F7BB6F5A8}.Release|x64.Build.0 = Release|Any CPU
 		{3F495493-070D-41F9-AAE9-A48F7BB6F5A8}.Release|x86.ActiveCfg = Release|Any CPU
 		{3F495493-070D-41F9-AAE9-A48F7BB6F5A8}.Release|x86.Build.0 = Release|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Debug|x64.Build.0 = Debug|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Debug|x86.Build.0 = Debug|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Release|x64.ActiveCfg = Release|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Release|x64.Build.0 = Release|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Release|x86.ActiveCfg = Release|Any CPU
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -378,5 +392,6 @@ Global
 		{01E27557-6891-44CA-8A61-04A9FEAE983A} = {EF5F7C17-BC92-10A8-5429-FED09D294436}
 		{6D0A0E58-6A09-40F8-E50A-0D26377112BA} = {56517A26-E457-70C5-371B-4B7E25007FB1}
 		{3F495493-070D-41F9-AAE9-A48F7BB6F5A8} = {6D0A0E58-6A09-40F8-E50A-0D26377112BA}
+		{7DF15E24-CB4F-4111-858A-4E27C20E1812} = {B36A84DF-456D-A817-6EDD-3EC3E7F6E11F}
 	EndGlobalSection
 EndGlobal
