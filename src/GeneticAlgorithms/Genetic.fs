@@ -60,6 +60,9 @@ module Genetic =
         Array.init opts.PopulationSize (fun _ -> genotype ())
 
     let run (problem: Problem<'Gene>) (opts: Options<'Gene>) =
+        if opts.PopulationSize <= 0 then
+            invalidArg (nameof opts) $"PopulationSize must be positive; got {opts.PopulationSize}."
+
         let population = initialize problem.Genotype opts
         let firstGeneration = 0
         let temperature = 0.0

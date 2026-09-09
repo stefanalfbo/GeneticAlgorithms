@@ -161,6 +161,39 @@ let runTests =
 
               Expect.equal result.Genes.[0] 9 "should return the chromosome with the highest fitness"
 
+          testCase "regression: rejects a zero PopulationSize"
+          <| fun _ ->
+              // Bug: PopulationSize = 0 used to make Genetic.initialize build an empty
+              // population silently, which Genetic.evolve then indexed into (`nextPopulation.
+              // [0]`) before problem.Terminate was ever called, crashing with an unrelated
+              // IndexOutOfRangeException instead of a clear, immediate error.
+              let mutable terminateWasCalled = false
+
+              let problem =
+                  { Genotype = fun () -> makeChromosome [| 0 |]
+                    FitnessFunction = fun _ -> 0.0
+                    Terminate =
+                      fun _ _ _ ->
+                          terminateWasCalled <- true
+                          true }
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Genetic.run problem { opts with PopulationSize = 0 } |> ignore)
+                  "a zero PopulationSize should be rejected"
+
+              Expect.isFalse terminateWasCalled "terminate should never be called for an invalid PopulationSize"
+
+          testCase "regression: rejects a negative PopulationSize"
+          <| fun _ ->
+              let problem =
+                  { Genotype = fun () -> makeChromosome [| 0 |]
+                    FitnessFunction = fun _ -> 0.0
+                    Terminate = fun _ _ _ -> true }
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Genetic.run problem { opts with PopulationSize = -1 } |> ignore)
+                  "a negative PopulationSize should be rejected"
+
           testCase "passes the current generation to terminate"
           <| fun _ ->
               let observedGenerations = System.Collections.Generic.List<int>()
