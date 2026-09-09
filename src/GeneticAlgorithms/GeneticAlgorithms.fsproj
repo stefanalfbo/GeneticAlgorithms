@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Shuffle.fs" />
     <Compile Include="Chromosome.fs" />
     <Compile Include="GenerationInfo.fs" />
     <Compile Include="Problem.fs" />

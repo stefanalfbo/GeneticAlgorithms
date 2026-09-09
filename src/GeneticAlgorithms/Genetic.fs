@@ -23,7 +23,7 @@ module Genetic =
         let n = int (float population.Length * opts.MutationRate)
 
         population
-        |> Array.sortBy (fun _ -> System.Random.Shared.Next())
+        |> Shuffle.fisherYates
         |> Array.take n
         |> Array.map opts.MutationFn
 

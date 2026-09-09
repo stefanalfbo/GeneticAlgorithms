@@ -34,7 +34,7 @@ module Mutation =
     /// <returns>A new chromosome with the same genes in a randomly scrambled order.</returns>
     let scramble (chromosome: Chromosome<'Gene>) =
         { chromosome with
-            Genes = chromosome.Genes |> Array.sortBy (fun _ -> System.Random.Shared.Next()) }
+            Genes = chromosome.Genes |> Shuffle.fisherYates }
 
     /// <summary>
     /// Mutates a chromosome by scrambling the order of genes within a random contiguous
@@ -62,7 +62,7 @@ module Mutation =
         let hi = lo + n
 
         let head = chromosome.Genes.[0 .. lo - 1]
-        let mid = chromosome.Genes.[lo .. hi - 1] |> Array.sortBy (fun _ -> System.Random.Shared.Next())
+        let mid = chromosome.Genes.[lo .. hi - 1] |> Shuffle.fisherYates
         let tail = chromosome.Genes.[hi..]
 
         { chromosome with

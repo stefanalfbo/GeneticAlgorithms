@@ -121,7 +121,6 @@ module Reinsertion =
         let old = Array.append parents leftover
         let n = int (float old.Length * survivalRate)
 
-        let survivors =
-            old |> Array.sortBy (fun _ -> System.Random.Shared.Next()) |> Array.take n
+        let survivors = old |> Shuffle.fisherYates |> Array.take n
 
         Array.append offspring survivors

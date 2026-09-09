@@ -143,7 +143,7 @@ module Crossover =
 
         let points =
             [| 1 .. length - 1 |]
-            |> Array.sortBy (fun _ -> System.Random.Shared.Next())
+            |> Shuffle.fisherYates
             |> Array.take pointCount
             |> Array.sort
 

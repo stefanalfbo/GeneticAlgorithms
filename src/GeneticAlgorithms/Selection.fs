@@ -29,9 +29,7 @@ module Selection =
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> randomly chosen chromosomes.</returns>
     let random (population: Chromosome<'Gene> array) (n: int) =
-        population
-        |> Array.sortBy (fun _ -> System.Random.Shared.Next())
-        |> Array.take n
+        population |> Shuffle.fisherYates |> Array.take n
 
     /// <summary>
     /// Selects <paramref name="n"/> chromosomes by running <paramref name="n"/> independent
