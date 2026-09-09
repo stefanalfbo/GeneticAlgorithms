@@ -7,13 +7,13 @@ var options = GeneticAlgorithm.CreateOptions<(int Roi, int Risk)>(
     selectionFn: Selection.elite,
     crossoverFn: Crossover.singlePoint,
     mutationFn: Mutation.scramble,
-    reinsertionFn: (parents, offspring, leftover) => Reinsertion.elitist(0.15, parents, offspring, leftover),
+    reinsertionFn: (rng, parents, offspring, leftover) => Reinsertion.elitist(0.15, rng, parents, offspring, leftover),
     probe: Probes.printProgress);
 
 var solution = GeneticAlgorithm.Run(
-    genotype: () => GeneticAlgorithm.CreateChromosome(
+    genotype: rng => GeneticAlgorithm.CreateChromosome(
         Enumerable.Range(0, 10)
-            .Select(_ => (Roi: Random.Shared.Next(1, 11), Risk: Random.Shared.Next(1, 11)))
+            .Select(_ => (Roi: rng.Next(1, 11), Risk: rng.Next(1, 11)))
             .ToArray()),
     fitnessFunction: chromosome => chromosome.Genes.Sum(gene => 2 * gene.Roi - gene.Risk),
     terminate: (population, _, _) => population.Any(chromosome => chromosome.Fitness >= targetFitness),
