@@ -224,7 +224,19 @@ let flipEachGeneTests =
 
               Mutation.flipEachGene 0.5 rng chromosome |> ignore
 
-              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
+              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged"
+
+          testCase "regression: rejects a rate outside [0, 1]"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0; 1; 1; 0; 1 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Mutation.flipEachGene -0.1 rng chromosome |> ignore)
+                  "a negative rate should be rejected"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Mutation.flipEachGene 1.1 rng chromosome |> ignore)
+                  "a rate above 1.0 should be rejected" ]
 
 [<Tests>]
 let randomResetTests =
@@ -294,7 +306,19 @@ let randomResetTests =
 
               Mutation.randomReset 0.5 (fun (_: System.Random) -> 99) rng chromosome |> ignore
 
-              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged" ]
+              Expect.equal chromosome.Genes genesBefore "original chromosome's genes should be unchanged"
+
+          testCase "regression: rejects a rate outside [0, 1]"
+          <| fun _ ->
+              let chromosome = makeChromosome [| 0; 1; 2; 3; 4 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Mutation.randomReset -0.1 (fun (_: System.Random) -> 99) rng chromosome |> ignore)
+                  "a negative rate should be rejected"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Mutation.randomReset 1.1 (fun (_: System.Random) -> 99) rng chromosome |> ignore)
+                  "a rate above 1.0 should be rejected" ]
 
 [<Tests>]
 let gaussianTests =

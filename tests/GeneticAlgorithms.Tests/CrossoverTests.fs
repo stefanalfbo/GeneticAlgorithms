@@ -367,7 +367,20 @@ let uniformTests =
               Crossover.uniform 0.5 rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
-              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged"
+
+          testCase "regression: rejects a rate outside [0, 1]"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.uniform -0.1 rng p1 p2 |> ignore)
+                  "a negative rate should be rejected"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.uniform 1.1 rng p1 p2 |> ignore)
+                  "a rate above 1.0 should be rejected" ]
 
 [<Tests>]
 let wholeArithmeticCrossoverTests =

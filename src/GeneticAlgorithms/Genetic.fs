@@ -83,7 +83,13 @@ module Genetic =
 
     let run (problem: Problem<'Gene>) (opts: Options<'Gene>) =
         if opts.PopulationSize <= 0 then
-            invalidArg (nameof opts) $"PopulationSize must be positive; got {opts.PopulationSize}."
+            invalidArg (nameof opts.PopulationSize) $"PopulationSize must be positive; got {opts.PopulationSize}."
+
+        if isNull opts.Random then
+            invalidArg (nameof opts.Random) "Random must not be null."
+
+        Validation.rate (nameof opts.SelectionRate) opts.SelectionRate
+        Validation.rate (nameof opts.MutationRate) opts.MutationRate
 
         let population = initialize problem.Genotype opts
         let firstGeneration = 0

@@ -112,7 +112,17 @@ let elitistTests =
               Expect.containsAll
                   result
                   (Array.concat [ offspring; parents; leftover ])
-                  "every chromosome should be present in the result" ]
+                  "every chromosome should be present in the result"
+
+          testCase "regression: rejects a survivalRate outside [0, 1]"
+          <| fun _ ->
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Reinsertion.elitist -0.1 rng [||] [||] [||] |> ignore)
+                  "a negative survivalRate should be rejected"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Reinsertion.elitist 1.1 rng [||] [||] [||] |> ignore)
+                  "a survivalRate above 1.0 should be rejected" ]
 
 [<Tests>]
 let uniformTests =
@@ -170,4 +180,14 @@ let uniformTests =
               Expect.containsAll
                   result
                   (Array.concat [ offspring; parents; leftover ])
-                  "every chromosome should be present in the result" ]
+                  "every chromosome should be present in the result"
+
+          testCase "regression: rejects a survivalRate outside [0, 1]"
+          <| fun _ ->
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Reinsertion.uniform -0.1 rng [||] [||] [||] |> ignore)
+                  "a negative survivalRate should be rejected"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Reinsertion.uniform 1.1 rng [||] [||] [||] |> ignore)
+                  "a survivalRate above 1.0 should be rejected" ]

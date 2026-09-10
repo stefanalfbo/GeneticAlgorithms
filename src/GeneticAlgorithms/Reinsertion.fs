@@ -64,15 +64,13 @@ module Reinsertion =
     /// and gives some control over population size: since <c>parents.Length + leftover.Length</c>
     /// equals the previous generation's population size, choosing
     /// <c>survivalRate</c> around <c>1.0 - SelectionRate - MutationRate</c> keeps the
-    /// population roughly stable rather than drifting, as <c>pure</c> does. Assumes
-    /// <paramref name="survivalRate"/> is in <c>[0, 1]</c>; this is not validated - a value
-    /// above <c>1.0</c> would ask for more survivors than exist. Ignores
+    /// population roughly stable rather than drifting, as <c>pure</c> does. Ignores
     /// <paramref name="rng"/> - which survivors are fittest is deterministic, but still
     /// accepts a source of randomness to match every other <c>ReinsertionFn</c>'s shape.
     /// Curry <paramref name="survivalRate"/> (e.g. <c>Reinsertion.elitist 0.15</c>) to use
     /// this as an <c>Options.ReinsertionFn</c>.
     /// </remarks>
-    /// <param name="survivalRate">The fraction of the previous generation to carry over as survivors.</param>
+    /// <param name="survivalRate">The fraction of the previous generation to carry over as survivors. Must be in [0, 1].</param>
     /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="parents">The chromosomes selected as crossover parents this generation.</param>
     /// <param name="offspring">This generation's crossover children and mutants.</param>
@@ -81,6 +79,9 @@ module Reinsertion =
     /// <paramref name="offspring"/> combined with the fittest survivors of
     /// <paramref name="parents"/> and <paramref name="leftover"/>.
     /// </returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="survivalRate"/> is outside <c>[0, 1]</c>.
+    /// </exception>
     let elitist
         (survivalRate: float)
         (_rng: System.Random)
@@ -88,6 +89,8 @@ module Reinsertion =
         (offspring: Chromosome<'Gene> array)
         (leftover: Chromosome<'Gene> array)
         =
+        Validation.rate (nameof survivalRate) survivalRate
+
         let old = Array.append parents leftover
         let n = int (float old.Length * survivalRate)
 
@@ -109,13 +112,11 @@ module Reinsertion =
     /// under the same control as <c>elitist</c> (see its remarks on choosing
     /// <c>survivalRate</c>), without <c>elitist</c>'s bias toward carrying over the same
     /// fittest chromosomes generation after generation, at the cost of not deliberately
-    /// preserving good genes the way <c>elitist</c> does. Assumes
-    /// <paramref name="survivalRate"/> is in <c>[0, 1]</c>; this is not validated - a value
-    /// above <c>1.0</c> would ask for more survivors than exist. Curry
+    /// preserving good genes the way <c>elitist</c> does. Curry
     /// <paramref name="survivalRate"/> (e.g. <c>Reinsertion.uniform 0.15</c>) to use this as
     /// an <c>Options.ReinsertionFn</c>.
     /// </remarks>
-    /// <param name="survivalRate">The fraction of the previous generation to carry over as survivors.</param>
+    /// <param name="survivalRate">The fraction of the previous generation to carry over as survivors. Must be in [0, 1].</param>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="parents">The chromosomes selected as crossover parents this generation.</param>
     /// <param name="offspring">This generation's crossover children and mutants.</param>
@@ -124,6 +125,9 @@ module Reinsertion =
     /// <paramref name="offspring"/> combined with a uniformly random sample of
     /// <paramref name="parents"/> and <paramref name="leftover"/>.
     /// </returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="survivalRate"/> is outside <c>[0, 1]</c>.
+    /// </exception>
     let uniform
         (survivalRate: float)
         (rng: System.Random)
@@ -131,6 +135,8 @@ module Reinsertion =
         (offspring: Chromosome<'Gene> array)
         (leftover: Chromosome<'Gene> array)
         =
+        Validation.rate (nameof survivalRate) survivalRate
+
         let old = Array.append parents leftover
         let n = int (float old.Length * survivalRate)
 

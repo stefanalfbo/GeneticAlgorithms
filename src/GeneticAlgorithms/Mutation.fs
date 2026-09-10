@@ -108,11 +108,16 @@ module Mutation =
     /// to be meaningful. Curry <paramref name="rate"/> (e.g.
     /// <c>Mutation.flipEachGene 0.05</c>) to use this as an <c>Options&lt;int&gt;.MutationFn</c>.
     /// </remarks>
-    /// <param name="rate">The probability, per gene, that it gets flipped.</param>
+    /// <param name="rate">The probability, per gene, that it gets flipped. Must be in [0, 1].</param>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with each gene independently flipped or left as-is.</returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="rate"/> is outside <c>[0, 1]</c>.
+    /// </exception>
     let flipEachGene (rate: float) (rng: System.Random) (chromosome: Chromosome<int>) =
+        Validation.rate (nameof rate) rate
+
         { chromosome with
             Genes =
                 chromosome.Genes
@@ -141,12 +146,17 @@ module Mutation =
     /// too. Curry both arguments (e.g. <c>Mutation.randomReset 0.1 randomChar</c>) to use
     /// this as an <c>Options&lt;'Gene&gt;.MutationFn</c>.
     /// </remarks>
-    /// <param name="rate">The probability, per gene, that it gets replaced.</param>
+    /// <param name="rate">The probability, per gene, that it gets replaced. Must be in [0, 1].</param>
     /// <param name="generator">Produces a fresh, random gene value from the given source of randomness.</param>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with each gene independently replaced or left as-is.</returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="rate"/> is outside <c>[0, 1]</c>.
+    /// </exception>
     let randomReset (rate: float) (generator: System.Random -> 'Gene) (rng: System.Random) (chromosome: Chromosome<'Gene>) =
+        Validation.rate (nameof rate) rate
+
         { chromosome with
             Genes =
                 chromosome.Genes

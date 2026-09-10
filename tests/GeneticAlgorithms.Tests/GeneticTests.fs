@@ -197,6 +197,47 @@ let runTests =
                   (fun () -> Genetic.run problem { opts with PopulationSize = -1 } |> ignore)
                   "a negative PopulationSize should be rejected"
 
+          testCase "regression: rejects a null Random"
+          <| fun _ ->
+              let problem =
+                  { Genotype = fun _ -> makeChromosome [| 0 |]
+                    FitnessFunction = fun _ -> 0.0
+                    Terminate = fun _ _ _ -> true }
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Genetic.run problem { opts with Random = null } |> ignore)
+                  "a null Random should be rejected"
+
+          testCase "regression: rejects a SelectionRate outside [0, 1]"
+          <| fun _ ->
+              let problem =
+                  { Genotype = fun _ -> makeChromosome [| 0 |]
+                    FitnessFunction = fun _ -> 0.0
+                    Terminate = fun _ _ _ -> true }
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Genetic.run problem { opts with SelectionRate = -0.1 } |> ignore)
+                  "a negative SelectionRate should be rejected"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Genetic.run problem { opts with SelectionRate = 1.1 } |> ignore)
+                  "a SelectionRate above 1.0 should be rejected"
+
+          testCase "regression: rejects a MutationRate outside [0, 1]"
+          <| fun _ ->
+              let problem =
+                  { Genotype = fun _ -> makeChromosome [| 0 |]
+                    FitnessFunction = fun _ -> 0.0
+                    Terminate = fun _ _ _ -> true }
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Genetic.run problem { opts with MutationRate = -0.1 } |> ignore)
+                  "a negative MutationRate should be rejected"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Genetic.run problem { opts with MutationRate = 1.1 } |> ignore)
+                  "a MutationRate above 1.0 should be rejected"
+
           testCase "passes the current generation to terminate"
           <| fun _ ->
               let observedGenerations = System.Collections.Generic.List<int>()

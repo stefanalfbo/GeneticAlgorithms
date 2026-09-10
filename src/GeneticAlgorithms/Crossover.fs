@@ -304,7 +304,8 @@ module Crossover =
     /// </remarks>
     /// <param name="rate">
     /// The probability, per gene position, that the first child keeps the first parent's
-    /// gene (and the second child keeps the second parent's) rather than swapping.
+    /// gene (and the second child keeps the second parent's) rather than swapping. Must be
+    /// in [0, 1].
     /// </param>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
@@ -313,7 +314,12 @@ module Crossover =
     /// Two children, with each gene position independently drawn from one parent or the
     /// other.
     /// </returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="rate"/> is outside <c>[0, 1]</c>.
+    /// </exception>
     let uniform (rate: float) (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        Validation.rate (nameof rate) rate
+
         let c1, c2 =
             Array.zip p1.Genes p2.Genes
             |> Array.map (fun (x, y) -> if rng.NextDouble() < rate then x, y else y, x)
