@@ -342,4 +342,36 @@ let runTests =
               Expect.all
                   observedPopulationSizes
                   ((=) duplicateSelectionOpts.PopulationSize)
-                  "population size should stay stable across this generation, even though roulette selection can pick the same chromosome more than once" ]
+                  "population size should stay stable across this generation, even though roulette selection can pick the same chromosome more than once"
+
+          testCase "regression: PopulationSize stays exact despite independent rounding in selection, mutation, and reinsertion"
+          <| fun _ ->
+              // Bug: Options.create's defaults (SelectionRate 0.8 + MutationRate 0.05 +
+              // Reinsertion.elitist's survivalRate 0.15) are meant to sum to 1.0 and keep
+              // population size stable, but Selection.select, Genetic.mutation, and
+              // Reinsertion.elitist each round their own fractional share of PopulationSize
+              // independently. For PopulationSize = 8: selection rounds 6.4 up to the
+              // nearest even number (6) and consumes exactly 6 parents as crossover
+              // children, mutation floors 0.4 down to 0 mutants, and elitist floors
+              // (parents + leftover) * 0.15 = 1.2 down to 1 survivor - 6 + 0 + 1 = 7, one
+              // short of 8, every generation, with no rate combination or population size
+              // able to guarantee otherwise by construction.
+              let genotype (rng: System.Random) = makeChromosome [| rng.Next(0, 1_000_000) |]
+
+              let observedPopulationSizes = System.Collections.Generic.List<int>()
+
+              let problem =
+                  { Genotype = genotype
+                    FitnessFunction = fun c -> float c.Genes.[0]
+                    Terminate = fun _ generation _ -> generation >= 5 }
+
+              let smallOpts =
+                  { Options.create 8 with
+                      Probe = fun info -> observedPopulationSizes.Add info.Population.Length }
+
+              Genetic.run problem smallOpts |> ignore
+
+              Expect.all
+                  observedPopulationSizes
+                  ((=) 8)
+                  "population size should stay exactly 8 every generation, not drift to 7" ]

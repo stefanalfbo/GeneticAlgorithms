@@ -27,6 +27,27 @@ module Genetic =
         |> Array.take n
         |> Array.map (opts.MutationFn opts.Random)
 
+    /// Selection, mutation, and reinsertion each round their own fractional share of
+    /// PopulationSize independently, so their combined output can drift a chromosome or two
+    /// away from PopulationSize even when the configured rates are meant to sum to 1.0 (see
+    /// Reinsertion.elitist's remarks). This corrects that drift back to exactly
+    /// PopulationSize every generation: a shortfall is padded with freshly generated
+    /// genotypes, the same mechanism `initialize` uses for the first generation, and any
+    /// surplus is truncated.
+    let private resizeToPopulationSize
+        (opts: Options<'Gene>)
+        (problem: Problem<'Gene>)
+        (population: Chromosome<'Gene> array)
+        =
+        let diff = opts.PopulationSize - population.Length
+
+        if diff > 0 then
+            Array.append population (Array.init diff (fun _ -> problem.Genotype opts.Random))
+        elif diff < 0 then
+            Array.truncate opts.PopulationSize population
+        else
+            population
+
     let rec evolve
         (opts: Options<'Gene>)
         (problem: Problem<'Gene>)
@@ -54,6 +75,7 @@ module Genetic =
             let mutants = mutation opts nextPopulation
 
             opts.ReinsertionFn opts.Random parents (Array.append children mutants) leftover
+            |> resizeToPopulationSize opts problem
             |> evolve opts problem (generation + 1) best.Fitness newTemperature
 
     let initialize genotype (opts: Options<'Gene>) =

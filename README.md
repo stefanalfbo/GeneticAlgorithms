@@ -266,6 +266,7 @@ The test project verifies the main building blocks of the algorithm:
 * `Mutation.gaussian` preserves chromosome length and its resampled genes have approximately the same mean as the original genes
 * `Distance.jaroSimilarity` matches known reference values (for example, the standard `MARTHA`/`MARHTA` example), and is symmetric
 * `Options.create` fills every field but `PopulationSize` with the same defaults as `GeneticAlgorithm.CreateOptions`, and every field can still be overridden via ordinary record-update syntax
+* `Genetic.run` keeps every generation's population at exactly `PopulationSize`, even though `Selection.select`, `Genetic.mutation`, and `Reinsertion.elitist`/`Reinsertion.uniform` each round their own fractional share of it independently and can drift by a chromosome or two on their own (for example, `PopulationSize = 8` with the library's own default rates produces 6 crossover children + 0 mutants + 1 survivor = 7)
 
 ## Design Notes
 
@@ -275,6 +276,7 @@ This implementation is intentionally minimal. A few design choices to be aware o
 * There is no configurable crossover rate; `CrossoverFn` always runs on every selected parent pair
 * Every strategy function draws its randomness from the single `System.Random` instance in `Options.Random`, rather than `System.Random.Shared`, so seeding it (`{ Options.create 100 with Random = System.Random(42) }` in F#, or the `random`-taking `CreateOptions` overload in C#) makes an otherwise-identical run fully reproducible
 * `Selection.select` identifies which population slots were used as parents by comparing `Chromosome` values, not by tracking population indices - correct (see `Selection.partitionSelected`'s remarks for why), but it means every `'Gene` needs a meaningful equality, and multiple physically distinct chromosomes that happen to be value-identical are indistinguishable by design. A future major version could have `SelectionFn` return indices instead of values, sidestepping both the equality constraint and the identity ambiguity entirely - a breaking change to `Options.SelectionFn`'s shape, not attempted here
+* `PopulationSize` is enforced by padding or truncating each generation's combined selection/crossover/mutation/reinsertion output back to the exact target size, rather than by making that combination round exactly on its own (which isn't possible in general - see the `Test Coverage` bullet above). A shortfall is padded with freshly generated genotypes, the same mechanism the first generation uses, rather than by duplicating existing survivors - a deliberate small diversity injection, not just a size fix
 
 Those constraints keep the code simple, but they also make the project a good starting point for extending the algorithm with richer mutation operators or alternative crossover strategies.
 
