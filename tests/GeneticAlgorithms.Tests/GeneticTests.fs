@@ -415,4 +415,53 @@ let runTests =
               Expect.all
                   observedPopulationSizes
                   ((=) 8)
-                  "population size should stay exactly 8 every generation, not drift to 7" ]
+                  "population size should stay exactly 8 every generation, not drift to 7"
+
+          testCase "regression: identical seeds reproduce an entire run bit-for-bit, not just Shuffle.fisherYates in isolation"
+          <| fun _ ->
+              // RNG injection touches every stage of the pipeline - initial population,
+              // selection, crossover, mutation, and reinsertion - so this deliberately
+              // exercises randomness at every one of those stages (roulette selection,
+              // single-point crossover, scramble mutation, uniform reinsertion) rather than
+              // a mostly-deterministic combination like SelectionFn = elite /
+              // ReinsertionFn = pure, to prove the whole run reproduces end to end when
+              // Options.Random is seeded - not just that Shuffle.fisherYates alone does.
+              let genotype (rng: System.Random) =
+                  makeChromosome (Array.init 10 (fun _ -> rng.Next(0, 1_000_000)))
+
+              let problem =
+                  { Genotype = genotype
+                    FitnessFunction = fun c -> c.Genes |> Array.sumBy float
+                    Terminate = fun _ generation _ -> generation >= 10 }
+
+              let makeOpts (seed: int) (observedPopulations: ResizeArray<Chromosome<int> array>) =
+                  { PopulationSize = 20
+                    SelectionRate = 0.8
+                    SelectionFn = Selection.roulette
+                    CrossoverFn = Crossover.singlePoint
+                    MutationRate = 0.1
+                    MutationFn = Mutation.scramble
+                    ReinsertionFn = Reinsertion.uniform 0.15
+                    Probe = fun info -> observedPopulations.Add info.Population
+                    Random = System.Random(seed) }
+
+              let firstPopulations = ResizeArray<Chromosome<int> array>()
+              let secondPopulations = ResizeArray<Chromosome<int> array>()
+
+              let firstResult = Genetic.run problem (makeOpts 42 firstPopulations)
+              let secondResult = Genetic.run problem (makeOpts 42 secondPopulations)
+
+              Expect.equal secondResult firstResult "identical seeds should reproduce an identical final chromosome"
+
+              Expect.equal
+                  (secondPopulations |> Seq.toList)
+                  (firstPopulations |> Seq.toList)
+                  "identical seeds should reproduce an identical population at every generation, not just the final result"
+
+              let thirdPopulations = ResizeArray<Chromosome<int> array>()
+              let thirdResult = Genetic.run problem (makeOpts 43 thirdPopulations)
+
+              Expect.notEqual
+                  thirdResult
+                  firstResult
+                  "a different seed should not coincidentally reproduce the same result - otherwise this test would pass even if Options.Random were ignored entirely" ]
