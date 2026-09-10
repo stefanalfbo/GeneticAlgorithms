@@ -464,4 +464,51 @@ let runTests =
               Expect.notEqual
                   thirdResult
                   firstResult
-                  "a different seed should not coincidentally reproduce the same result - otherwise this test would pass even if Options.Random were ignored entirely" ]
+                  "a different seed should not coincidentally reproduce the same result - otherwise this test would pass even if Options.Random were ignored entirely"
+
+          testCase "regression: a crossover child's Age starts fresh rather than inheriting a parent's Age"
+          <| fun _ ->
+              // Bug: every Crossover strategy built its two children via
+              // `{ p1 with Genes = ... }, { p2 with Genes = ... }`, which carries every
+              // other field - including Age - forward from whichever parent record the
+              // child was built from, so a brand-new individual (combining two different
+              // parents' genes) silently inherited one parent's accumulated Age instead of
+              // starting at 0. Combined with Genetic.evaluate's unconditional "+1 every
+              // generation, no reset", population-wide Age became just `generation + 1` for
+              // every chromosome, regardless of how many generations it had actually
+              // existed as itself - see examples/TigerSimulation/fsharp/README.md's
+              // "A Note on Mean Age" for the original, pre-fix analysis.
+              let genotype (rng: System.Random) =
+                  makeChromosome (Array.init 5 (fun _ -> rng.Next(0, 1_000_000)))
+
+              let problem =
+                  { Genotype = genotype
+                    FitnessFunction = fun c -> c.Genes |> Array.sumBy float
+                    Terminate = fun _ generation _ -> generation >= 5 }
+
+              // SelectionRate 1.0 + Reinsertion.pure means every next-generation chromosome
+              // is a brand-new crossover child - none are carried-over survivors - and
+              // MutationRate 0.0 means none are mutants either (which, per Chromosome.Age's
+              // remarks, correctly preserve Age rather than resetting it, so mixing them in
+              // here would make this assertion fail for the wrong reason). If Age resets
+              // correctly on birth, every chromosome should be Age 1 - the first generation
+              // a freshly born individual is ever observed, per Chromosome.Age's remarks -
+              // at every generation, never accumulating with the generation count the way
+              // `generation + 1` did before this fix.
+              let allBirthOpts =
+                  { opts with
+                      SelectionRate = 1.0
+                      MutationRate = 0.0 }
+
+              let observedAges = System.Collections.Generic.List<int>()
+
+              let probeOpts =
+                  { allBirthOpts with
+                      Probe = fun info -> observedAges.AddRange(info.Population |> Array.map (fun c -> c.Age)) }
+
+              Genetic.run problem probeOpts |> ignore
+
+              Expect.all
+                  observedAges
+                  ((=) 1)
+                  "every chromosome should be a freshly born individual at Age 1, not generation + 1" ]

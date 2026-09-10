@@ -26,9 +26,23 @@ namespace GeneticAlgorithms
 /// swapping or copying them outright. Every strategy above preserves each parent's
 /// <c>Genes</c> length in its children; <c>messySinglePoint</c> is the exception - it's a
 /// variant of <c>singlePoint</c> built specifically to let a child's length differ from
-/// either parent's.
+/// either parent's. Every strategy's two children start at <c>Age = 0</c> and
+/// <c>Fitness = 0.0</c>, regardless of either parent's values - combining two parents
+/// produces a genuinely new individual, so it is "born" rather than continuing either
+/// parent's <c>Age</c>. See <c>Chromosome.Age</c>'s own remarks for the full picture,
+/// including why <c>Mutation</c> strategies do not reset it the same way.
 /// </remarks>
 module Crossover =
+
+    /// A newly created child: takes its Genes from the given array, but starts fresh at
+    /// Age 0 and Fitness 0.0 rather than inheriting parent's values - combining two
+    /// parents' genes produces a genuinely new individual, not a continuation of parent's
+    /// own lineage. Every strategy below uses this to build both of its children.
+    let private newborn (parent: Chromosome<'Gene>) (genes: 'Gene array) : Chromosome<'Gene> =
+        { parent with
+            Genes = genes
+            Fitness = 0.0
+            Age = 0 }
 
     /// <summary>
     /// Combines two parents into two children by picking a single random cut point and
@@ -76,10 +90,7 @@ module Crossover =
         let parent2Head = p2.Genes |> Array.take crossoverPoint
         let parent2Tail = p2.Genes |> Array.skip crossoverPoint
 
-        { p1 with
-            Genes = Array.append parent1Head parent2Tail },
-        { p2 with
-            Genes = Array.append parent2Head parent1Tail }
+        newborn p1 (Array.append parent1Head parent2Tail), newborn p2 (Array.append parent2Head parent1Tail)
 
     /// <summary>
     /// Combines two parents into two children like <c>singlePoint</c>, but picks the cut
@@ -117,7 +128,7 @@ module Crossover =
         let c1Genes = Array.append p1.Genes.[0 .. cut1 - 1] p2.Genes.[cut2 ..]
         let c2Genes = Array.append p2.Genes.[0 .. cut2 - 1] p1.Genes.[cut1 ..]
 
-        { p1 with Genes = c1Genes }, { p2 with Genes = c2Genes }
+        newborn p1 c1Genes, newborn p2 c2Genes
 
     /// <summary>
     /// Combines two parents into two children by picking <paramref name="pointCount"/>
@@ -170,7 +181,7 @@ module Crossover =
             Array.init p1Segments.Length (fun i -> if i % 2 = 0 then p2Segments.[i] else p1Segments.[i])
             |> Array.concat
 
-        { p1 with Genes = c1 }, { p2 with Genes = c2 }
+        newborn p1 c1, newborn p2 c2
 
     /// <summary>
     /// Combines two permutation-encoded parents into two children using order-one
@@ -216,10 +227,7 @@ module Crossover =
         let p1Contrib = p1.Genes |> Array.filter (slice2Set.Contains >> not)
         let head2, tail2 = Array.splitAt i1 p1Contrib
 
-        { p1 with
-            Genes = Array.concat [ head1; slice1; tail1 ] },
-        { p2 with
-            Genes = Array.concat [ head2; slice2; tail2 ] }
+        newborn p1 (Array.concat [ head1; slice1; tail1 ]), newborn p2 (Array.concat [ head2; slice2; tail2 ])
 
     /// <summary>
     /// Combines two permutation-encoded parents into two children using cycle crossover
@@ -285,7 +293,7 @@ module Crossover =
                 traceCycle start
                 takeFromP1 <- not takeFromP1
 
-        { p1 with Genes = c1 }, { p2 with Genes = c2 }
+        newborn p1 c1, newborn p2 c2
 
     /// <summary>
     /// Combines two parents into two children by considering each gene position
@@ -325,7 +333,7 @@ module Crossover =
             |> Array.map (fun (x, y) -> if rng.NextDouble() < rate then x, y else y, x)
             |> Array.unzip
 
-        { p1 with Genes = c1 }, { p2 with Genes = c2 }
+        newborn p1 c1, newborn p2 c2
 
     /// <summary>
     /// Combines two real-valued parents into two children by blending each gene position
@@ -360,4 +368,4 @@ module Crossover =
             |> Array.map (fun (x, y) -> x * alpha + y * (1.0 - alpha), x * (1.0 - alpha) + y * alpha)
             |> Array.unzip
 
-        { p1 with Genes = c1 }, { p2 with Genes = c2 }
+        newborn p1 c1, newborn p2 c2

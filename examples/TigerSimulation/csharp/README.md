@@ -41,23 +41,23 @@ Simulating tiger evolution over 1000 generations in two environments...
 
 Mean fitness / mean age by generation (sampled every 100 generations):
 Generation |  Tropical Fit. | Tropical Age |    Tundra Fit. |   Tundra Age
-         0 |           3.29 |         1.00 |           2.33 |         1.00
-       100 |           7.46 |       101.00 |           7.38 |       101.00
+         0 |           3,50 |         1,00 |           2,34 |         1,00
+       100 |           7,38 |         1,21 |           7,30 |         1,23
        ...
-      1000 |           7.27 |      1001.00 |           7.29 |      1001.00
+      1000 |           7,35 |         1,21 |           7,28 |         1,21
 
 Final results:
 Tropical:
-  Final mean fitness: 7.27, final mean age: 1001.00
-  Fittest tiger (fitness 7.50): Size: smaller, Swimming Ability: high, Fur Color: dark, Fat Stores: more, Activity Period: nocturnal, Hunting Ground: larger, Fur Thickness: less thick, Tail Length: smaller
+  Final mean fitness: 7,35, final mean age: 1,21
+  Fittest tiger (fitness 7,50): Size: smaller, Swimming Ability: high, Fur Color: dark, Fat Stores: more, Activity Period: nocturnal, Hunting Ground: larger, Fur Thickness: less thick, Tail Length: smaller
 Tundra:
-  Final mean fitness: 7.29, final mean age: 1001.00
-  Fittest tiger (fitness 7.50): Size: larger, Swimming Ability: high, Fur Color: light, Fat Stores: less, Activity Period: nocturnal, Hunting Ground: larger, Fur Thickness: more thick, Tail Length: larger
+  Final mean fitness: 7,28, final mean age: 1,21
+  Fittest tiger (fitness 7,50): Size: larger, Swimming Ability: high, Fur Color: light, Fat Stores: less, Activity Period: nocturnal, Hunting Ground: larger, Fur Thickness: more thick, Tail Length: smaller
 
 Full per-generation statistics written to tropical_stats.csv and tundra_stats.csv
 ```
 
-As with the F# version, both environments reliably converge on the theoretical maximum fitness of 7.5, and mean age turns out to be exactly `generation + 1` in both - see the F# README for why that's an expected property of the library, not a coincidence. Because the algorithm is randomized, exact values vary between runs. (Depending on your machine's locale, the console's decimal numbers may print with a comma instead of a period - this example doesn't force a specific culture for its console output, matching the other C# examples in this library; the CSV output always uses a period, regardless of locale.)
+As with the F# version, both environments reliably converge on the theoretical maximum fitness of 7.5, and mean age hovers a little above `1.0` (around `1.2` in the sample run above) rather than growing with the generation count - see the F# README's "A Note on Mean Age" for why that reflects `Reinsertion.elitist 0.15`'s mix of freshly born crossover children and older carried-over survivors. Because the algorithm is randomized, exact values vary between runs. (Depending on your machine's locale, the console's decimal numbers may print with a comma instead of a period, as in the sample above - this example doesn't force a specific culture for its console output, matching the other C# examples in this library; the CSV output always uses a period, regardless of locale.)
 
 ## Related Projects
 

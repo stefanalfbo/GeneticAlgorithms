@@ -61,6 +61,8 @@ type Chromosome<'T> =
     member this.Size = this.Genes.Length
 ```
 
+`Age` counts the number of generations a chromosome has existed, incremented once per generation by `Genetic.evaluate`. It resets to `0` when a chromosome is "born" - by `Crossover` (which always produces a genuinely new individual from two parents) or by a freshly generated genotype (the initial population, or padding a shortfall back to `PopulationSize`). `Mutation` does not reset it - a mutated chromosome is still the same individual, one generation older, with modified genes, the same way a `Reinsertion`-carried-over survivor keeps aging without being "reborn". Because `evaluate` always runs before `Options.Probe`/`Problem.Terminate` see a generation, the minimum `Age` ever observable is `1`, not `0`, for both the very first generation and any chromosome born since.
+
 ### `Problem<'Gene>`
 
 Defines how a specific optimization problem behaves.
@@ -268,6 +270,7 @@ The test project verifies the main building blocks of the algorithm:
 * `Options.create` fills every field but `PopulationSize` with the same defaults as `GeneticAlgorithm.CreateOptions`, and every field can still be overridden via ordinary record-update syntax
 * `Genetic.run` keeps every generation's population at exactly `PopulationSize`, even though `Selection.select`, `Genetic.mutation`, and `Reinsertion.elitist`/`Reinsertion.uniform` each round their own fractional share of it independently and can drift by a chromosome or two on their own (for example, `PopulationSize = 8` with the library's own default rates produces 6 crossover children + 0 mutants + 1 survivor = 7)
 * `Genetic.run` rejects a `null` `Options.Random`, and every public rate-shaped parameter (`Options.SelectionRate`/`MutationRate`, `Reinsertion.elitist`/`Reinsertion.uniform`'s `survivalRate`, `Mutation.flipEachGene`/`Mutation.randomReset`'s `rate`, and `Crossover.uniform`'s `rate`) rejects a value outside `[0, 1]`
+* Every `Crossover` strategy resets both children's `Age` and `Fitness` to `0`/`0.0`, regardless of either parent's values - and, end to end, `Genetic.run` keeps every chromosome at `Age = 1` (the first generation a freshly born individual is observed) rather than letting it accumulate with the generation count
 
 ## Design Notes
 

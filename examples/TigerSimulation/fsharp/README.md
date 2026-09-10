@@ -84,18 +84,18 @@ Simulating tiger evolution over 1000 generations in two environments...
 
 Mean fitness / mean age by generation (sampled every 100 generations):
 Generation |  Tropical Fit. | Tropical Age |    Tundra Fit. |   Tundra Age
-         0 |           3.10 |         1.00 |           2.85 |         1.00
-       100 |           7.24 |       101.00 |           7.35 |       101.00
+         0 |           3.42 |         1.00 |           2.35 |         1.00
+       100 |           7.36 |         1.21 |           7.21 |         1.20
        ...
-      1000 |           7.39 |      1001.00 |           7.27 |      1001.00
+      1000 |           7.29 |         1.21 |           7.28 |         1.21
 
 Final results:
 Tropical:
-  Final mean fitness: 7.39, final mean age: 1001.00
+  Final mean fitness: 7.29, final mean age: 1.21
   Fittest tiger (fitness 7.50): Size: smaller, Swimming Ability: high, Fur Color: dark, Fat Stores: more, Activity Period: nocturnal, Hunting Ground: larger, Fur Thickness: less thick, Tail Length: smaller
 Tundra:
-  Final mean fitness: 7.27, final mean age: 1001.00
-  Fittest tiger (fitness 7.50): Size: larger, Swimming Ability: high, Fur Color: light, Fat Stores: less, Activity Period: nocturnal, Hunting Ground: larger, Fur Thickness: more thick, Tail Length: larger
+  Final mean fitness: 7.28, final mean age: 1.21
+  Fittest tiger (fitness 7.50): Size: larger, Swimming Ability: high, Fur Color: light, Fat Stores: less, Activity Period: nocturnal, Hunting Ground: larger, Fur Thickness: more thick, Tail Length: smaller
 
 Full per-generation statistics written to tropical_stats.csv and tundra_stats.csv
 ```
@@ -104,7 +104,7 @@ Both environments reliably converge on their theoretical maximum fitness of 7.5,
 
 ## A Note on Mean Age
 
-Mean age turns out to be exactly `generation + 1` in both environments, every single generation, with zero variance - check the CSV output and you'll see it holds precisely. That's not a coincidence specific to tigers: the library's `Chromosome.Age` field is copied unchanged through every crossover and mutation (they all build their result via F#'s `{ chromosome with Genes = ... }`, which carries every other field - including `Age` - forward untouched), and `Genetic.evaluate` increments it by exactly one for every chromosome in the population, every generation, with no path that ever resets it. As long as population size stays roughly stable (which `Reinsertion.elitist` is specifically configured to do here), that makes population-wide mean age a deterministic function of the generation count - not a measurement of survival, turnover, or selection pressure in either environment. It's still exactly what the task asked this probe to track; it just turns out not to vary between the two environments, which is itself worth knowing before reading more into the number than it carries.
+`Chromosome.Age` counts the number of generations a specific individual has existed - see the library README's "Core Concepts" section for the full definition. In this example, `Reinsertion.elitist 0.15` carries roughly 15% of each generation forward as unchanged survivors (who keep aging), while the rest of the population is replaced by freshly born crossover children (who reset to `Age = 0`, observed as `Age = 1` the first generation they're evaluated). That mix is why mean age hovers a little above `1.0` - around `1.2` in the sample run above - rather than growing with the generation count the way it used to: at any given moment, most of the population is one generation old, and a smaller, roughly constant fraction is older survivors pulling the average up. A higher `survivalRate` would push mean age up further; a lower one would push it closer to `1.0`. It still isn't a rich genealogy signal (it can't distinguish a five-generation survivor from a fifty-generation one without also looking at the age distribution's tail, not just its mean), but it now measures something real: how much of the population turns over each generation, not just how many generations have elapsed since the run started.
 
 ## Note on Scope
 

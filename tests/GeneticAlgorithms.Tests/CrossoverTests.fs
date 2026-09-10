@@ -63,7 +63,19 @@ let singlePointTests =
 
               Expect.throwsT<System.ArgumentException>
                   (fun () -> Crossover.singlePoint rng p1 p2 |> ignore)
-                  "parents with different lengths should be rejected" ]
+                  "parents with different lengths should be rejected"
+
+          testCase "resets Age and Fitness for both children, regardless of the parents'"
+          <| fun _ ->
+              let p1 = { makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |] with Fitness = 99.0; Age = 7 }
+              let p2 = { makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |] with Fitness = 42.0; Age = 3 }
+
+              let c1, c2 = Crossover.singlePoint rng p1 p2
+
+              Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
+              Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
+              Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
 
 [<Tests>]
 let multiPointTests =
@@ -131,7 +143,19 @@ let multiPointTests =
               Crossover.multiPoint 3 rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
-              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged"
+
+          testCase "resets Age and Fitness for both children, regardless of the parents'"
+          <| fun _ ->
+              let p1 = { makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |] with Fitness = 99.0; Age = 7 }
+              let p2 = { makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |] with Fitness = 42.0; Age = 3 }
+
+              let c1, c2 = Crossover.multiPoint 3 rng p1 p2
+
+              Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
+              Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
+              Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
 
 [<Tests>]
 let messySinglePointTests =
@@ -188,7 +212,19 @@ let messySinglePointTests =
               Crossover.messySinglePoint rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
-              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged"
+
+          testCase "resets Age and Fitness for both children, regardless of the parents'"
+          <| fun _ ->
+              let p1 = { makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |] with Fitness = 99.0; Age = 7 }
+              let p2 = { makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |] with Fitness = 42.0; Age = 3 }
+
+              let c1, c2 = Crossover.messySinglePoint rng p1 p2
+
+              Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
+              Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
+              Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
 
 [<Tests>]
 let orderOneCrossoverTests =
@@ -229,7 +265,19 @@ let orderOneCrossoverTests =
               Crossover.orderOneCrossover rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
-              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged"
+
+          testCase "resets Age and Fitness for both children, regardless of the parents'"
+          <| fun _ ->
+              let p1 = { makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |] with Fitness = 99.0; Age = 7 }
+              let p2 = { makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |] with Fitness = 42.0; Age = 3 }
+
+              let c1, c2 = Crossover.orderOneCrossover rng p1 p2
+
+              Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
+              Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
+              Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
 
 [<Tests>]
 let cycleCrossoverTests =
@@ -301,7 +349,19 @@ let cycleCrossoverTests =
               Crossover.cycleCrossover rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
-              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged"
+
+          testCase "resets Age and Fitness for both children, regardless of the parents'"
+          <| fun _ ->
+              let p1 = { makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |] with Fitness = 99.0; Age = 7 }
+              let p2 = { makeChromosome [| 7; 6; 5; 4; 3; 2; 1; 0 |] with Fitness = 42.0; Age = 3 }
+
+              let c1, c2 = Crossover.cycleCrossover rng p1 p2
+
+              Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
+              Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
+              Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
 
 [<Tests>]
 let uniformTests =
@@ -380,7 +440,19 @@ let uniformTests =
 
               Expect.throwsT<System.ArgumentException>
                   (fun () -> Crossover.uniform 1.1 rng p1 p2 |> ignore)
-                  "a rate above 1.0 should be rejected" ]
+                  "a rate above 1.0 should be rejected"
+
+          testCase "resets Age and Fitness for both children, regardless of the parents'"
+          <| fun _ ->
+              let p1 = { makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |] with Fitness = 99.0; Age = 7 }
+              let p2 = { makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |] with Fitness = 42.0; Age = 3 }
+
+              let c1, c2 = Crossover.uniform 0.5 rng p1 p2
+
+              Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
+              Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
+              Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
 
 [<Tests>]
 let wholeArithmeticCrossoverTests =
@@ -439,4 +511,16 @@ let wholeArithmeticCrossoverTests =
               Crossover.wholeArithmeticCrossover 0.3 rng p1 p2 |> ignore
 
               Expect.equal p1.Genes p1GenesBefore "first parent's genes should be unchanged"
-              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged" ]
+              Expect.equal p2.Genes p2GenesBefore "second parent's genes should be unchanged"
+
+          testCase "resets Age and Fitness for both children, regardless of the parents'"
+          <| fun _ ->
+              let p1 = { makeChromosome [| 0.0; 1.0; 2.0; 3.0 |] with Fitness = 99.0; Age = 7 }
+              let p2 = { makeChromosome [| 10.0; 11.0; 12.0; 13.0 |] with Fitness = 42.0; Age = 3 }
+
+              let c1, c2 = Crossover.wholeArithmeticCrossover 0.3 rng p1 p2
+
+              Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
+              Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
+              Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
