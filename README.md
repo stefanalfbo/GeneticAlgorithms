@@ -69,7 +69,7 @@ Defines how a specific optimization problem behaves.
 
 ```fsharp
 type Problem<'Gene> =
-    { Genotype: unit -> Chromosome<'Gene>
+    { Genotype: System.Random -> Chromosome<'Gene>
       FitnessFunction: Chromosome<'Gene> -> float
       Terminate: seq<Chromosome<'Gene>> -> int -> float -> bool }
 ```
@@ -82,12 +82,14 @@ Controls runtime configuration.
 type Options<'Gene> =
     { PopulationSize: int
       SelectionRate: float
-      SelectionFn: Chromosome<'Gene> array -> int -> Chromosome<'Gene> array
-      CrossoverFn: Chromosome<'Gene> -> Chromosome<'Gene> -> Chromosome<'Gene> * Chromosome<'Gene>
+      SelectionFn: System.Random -> Chromosome<'Gene> array -> int -> Chromosome<'Gene> array
+      CrossoverFn: System.Random -> Chromosome<'Gene> -> Chromosome<'Gene> -> Chromosome<'Gene> * Chromosome<'Gene>
       MutationRate: float
-      MutationFn: Chromosome<'Gene> -> Chromosome<'Gene>
-      ReinsertionFn: Chromosome<'Gene> array -> Chromosome<'Gene> array -> Chromosome<'Gene> array -> Chromosome<'Gene> array
-      Probe: GenerationInfo<'Gene> -> unit }
+      MutationFn: System.Random -> Chromosome<'Gene> -> Chromosome<'Gene>
+      ReinsertionFn:
+          System.Random -> Chromosome<'Gene> array -> Chromosome<'Gene> array -> Chromosome<'Gene> array -> Chromosome<'Gene> array
+      Probe: GenerationInfo<'Gene> -> unit
+      Random: System.Random }
 ```
 
 `SelectionFn` picks from the `Selection` module (`Selection.elite`, `Selection.random`, `Selection.tournament`, `Selection.tournamentNoDuplicates`, `Selection.roulette`, `Selection.boltzmann`, `Selection.stochasticUniversalSampling`, `Selection.rank`) or a custom function of the same shape.
@@ -99,6 +101,8 @@ type Options<'Gene> =
 `ReinsertionFn` picks from the `Reinsertion` module (`` Reinsertion.`pure` `` to replace the population outright with this generation's offspring, or `Reinsertion.elitist`/`Reinsertion.uniform` to carry over a fraction of the previous generation's fittest or randomly chosen survivors alongside it) or a custom function of the same shape - it decides how parents, offspring, and leftover chromosomes combine into the next population.
 
 `Probe` is called with a `GenerationInfo<'Gene>` snapshot after every evaluation. It's a generic injection point - the library only decides when it fires and what it carries; what a probe does with that snapshot (print it, collect it in memory, write it to a file or database, push it to a monitoring service) is entirely up to whoever plugs one in. The default is `Probes.noop` - probing is opt-in, not imposed. `Probes.printProgress` is a ready-made probe that prints the best fitness; `Probes.combine` runs several probes together, and `Probes.everyNth` throttles one to fire only every *n* generations.
+
+`Random` is the single source of randomness for an entire run - every `SelectionFn`/`CrossoverFn`/`MutationFn`/`ReinsertionFn`, and `Problem.Genotype`, are called with this same instance rather than reaching for `System.Random.Shared`, so seeding it (`{ Options.create 100 with Random = System.Random(42) }`) makes an otherwise-identical run fully reproducible.
 
 ### `GenerationInfo<'Gene>`
 
