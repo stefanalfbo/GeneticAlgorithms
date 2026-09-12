@@ -138,7 +138,7 @@ The termination callback receives the evaluated population, the current generati
 
 ### Requirements
 
-* .NET 9 SDK
+* .NET 10 SDK
 
 ### Build the solution
 

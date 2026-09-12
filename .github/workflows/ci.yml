@@ -23,7 +23,7 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 9.0.x
+          dotnet-version: 10.0.x
 
       - name: Restore dependencies
         run: dotnet restore genetic-algorithms.sln
@@ -40,7 +40,7 @@ jobs:
           --output coverage.cobertura.xml
           --output-format cobertura
           --settings coverage.config.xml
-          --include-files "src/GeneticAlgorithms/bin/Release/net9.0/GeneticAlgorithms.dll"
+          --include-files "src/GeneticAlgorithms/bin/Release/net10.0/GeneticAlgorithms.dll"
           dotnet run --project tests/GeneticAlgorithms.Tests/GeneticAlgorithms.Tests.fsproj
           --configuration Release --no-build
 
