@@ -326,15 +326,16 @@ module Crossover =
     /// chromosome's genes represent a permutation (each row used exactly once) rather than
     /// independent values.
     ///
-    /// Both parents must be permutations of the same, non-empty gene set - the same
-    /// length, no duplicate genes in either parent, and the same distinct values in both -
-    /// this is validated (empty parents are not; see <c>validatePermutation</c>'s own
-    /// remarks for why). Without it, a duplicate-containing "almost permutation" can make
-    /// the cycle-tracing recursion below loop back to a position it has already visited
-    /// without ever returning to its start, recursing without ever terminating. Ignores
-    /// <paramref name="rng"/> - which parent contributes each cycle alternates
-    /// deterministically, but still accepts a source of randomness to match every other
-    /// <c>CrossoverFn</c>'s shape.
+    /// Both parents must be permutations of the same gene set - the same length, no
+    /// duplicate genes in either parent, and the same distinct values in both - this is
+    /// validated. Without it, a duplicate-containing "almost permutation" can make the
+    /// cycle-tracing recursion below loop back to a position it has already visited
+    /// without ever returning to its start, recursing without ever terminating. Two empty
+    /// parents are a trivial permutation of the empty set and produce two empty children -
+    /// there are no positions to trace a cycle through, so the loop below simply never
+    /// runs, with no special case needed. Ignores <paramref name="rng"/> - which parent
+    /// contributes each cycle alternates deterministically, but still accepts a source of
+    /// randomness to match every other <c>CrossoverFn</c>'s shape.
     /// </remarks>
     /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="p1">The first parent.</param>
