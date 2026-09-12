@@ -133,7 +133,37 @@ let scrambleSliceTests =
                   Expect.containsAll
                       result.Genes
                       chromosome.Genes
-                      "mutated genes should be a permutation of the original genes" ]
+                      "mutated genes should be a permutation of the original genes"
+
+          testCase "regression: rejects a negative n"
+          <| fun _ ->
+              // Bug: a negative n made the window's end (lo + n) land before its start
+              // (lo), so the gene at that boundary was included in both the "head" slice
+              // (up to lo - 1, which is lo + n) and the "tail" slice (from lo + n onward) -
+              // silently duplicating that gene and growing the chromosome by one gene per
+              // unit of negative overshoot, instead of throwing or leaving it unchanged.
+              let chromosome = makeChromosome [| 0 .. 9 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Mutation.scrambleSlice -1 rng chromosome |> ignore)
+                  "a negative n should be rejected"
+
+          testCase "regression: rejects an n greater than the chromosome's Genes length"
+          <| fun _ ->
+              // Bug: an n of exactly size + 1 didn't crash at all - it silently scrambled
+              // the whole chromosome instead of rejecting a window one gene too large,
+              // since size - n + 1 = 0 is still a valid (degenerate) Random.Next range. A
+              // much larger n instead made size - n + 1 go negative, so Random.Next threw
+              // an unrelated ArgumentOutOfRangeException rather than a clear error naming n.
+              let chromosome = makeChromosome [| 0 .. 9 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Mutation.scrambleSlice (chromosome.Genes.Length + 1) rng chromosome |> ignore)
+                  "an n one greater than the chromosome's Genes length should be rejected"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Mutation.scrambleSlice (chromosome.Genes.Length + 5) rng chromosome |> ignore)
+                  "an n far greater than the chromosome's Genes length should be rejected" ]
 
 [<Tests>]
 let flipTests =

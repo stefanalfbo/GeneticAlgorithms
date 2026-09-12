@@ -55,15 +55,27 @@ module Mutation =
     /// <c>Genes.Length - n</c>, inclusive), so it always stays exactly <paramref name="n"/>
     /// genes long without needing to be shifted, and every gene - including the very first
     /// and very last - has an equal chance of falling inside it. <paramref name="n"/> must
-    /// not exceed the chromosome's <c>Genes</c> length; this is not validated. Curry
-    /// <paramref name="n"/> (e.g. <c>Mutation.scrambleSlice 3</c>) to use this as an
-    /// <c>Options.MutationFn</c>.
+    /// be between <c>0</c> and the chromosome's <c>Genes</c> length, inclusive; this is
+    /// validated. A negative <paramref name="n"/> would otherwise make the window's end
+    /// come before its start, silently duplicating the gene at that boundary and growing
+    /// the chromosome by one gene per unit of negative overshoot, rather than throwing or
+    /// leaving the chromosome unchanged. Curry <paramref name="n"/> (e.g.
+    /// <c>Mutation.scrambleSlice 3</c>) to use this as an <c>Options.MutationFn</c>.
     /// </remarks>
-    /// <param name="n">The size of the window to scramble.</param>
+    /// <param name="n">The size of the window to scramble. Must be between 0 and the chromosome's Genes length, inclusive.</param>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
     /// <returns>A new chromosome with a random <paramref name="n"/>-gene window scrambled in place.</returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="n"/> is negative or exceeds the chromosome's
+    /// <c>Genes</c> length.
+    /// </exception>
     let scrambleSlice (n: int) (rng: System.Random) (chromosome: Chromosome<'Gene>) =
+        if n < 0 || n > chromosome.Genes.Length then
+            invalidArg
+                (nameof n)
+                $"n must be between 0 and the chromosome's Genes length ({chromosome.Genes.Length}); got {n}."
+
         let size = chromosome.Genes.Length
         let lo = rng.Next(0, size - n + 1)
         let hi = lo + n
