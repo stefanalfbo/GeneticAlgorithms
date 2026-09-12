@@ -276,6 +276,7 @@ The test project verifies the main building blocks of the algorithm:
 * `Genetic.run` rejects a `null` `Options.Random`, and every public rate-shaped parameter (`Options.SelectionRate`/`MutationRate`, `Reinsertion.elitist`/`Reinsertion.uniform`'s `survivalRate`, `Mutation.flipEachGene`/`Mutation.randomReset`'s `rate`, and `Crossover.uniform`'s `rate`) rejects a value outside `[0, 1]`
 * Every `Crossover` strategy resets both children's `Age` and `Fitness` to `0`/`0.0`, regardless of either parent's values - and, end to end, `Genetic.run` keeps every chromosome at `Age = 1` (the first generation a freshly born individual is observed) rather than letting it accumulate with the generation count
 * An empty chromosome (`Genes = [||]`) is a no-op for every `Crossover` and `Mutation` strategy - producing another empty chromosome (or, for mutation, the same chromosome unchanged) rather than crashing or being rejected
+* Every `Crossover` strategy that assumes equal-length parents validates that assumption explicitly and consistently, via one shared internal helper, rather than relying on an incidental failure from whatever array operation it happens to call first: `singlePoint`, `multiPoint`, `uniform`, and `wholeArithmeticCrossover` all raise the same clear error naming the actual problem. `multiPoint`'s `pointCount` is validated the same way, against the number of interior cut positions the parents' length actually has
 
 ## Design Notes
 

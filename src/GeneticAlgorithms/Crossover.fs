@@ -188,15 +188,17 @@ module Crossover =
     /// permutations of the same values (as in <c>NQueens</c>), the children generally
     /// won't be. Use <c>orderOneCrossover</c> for permutation genotypes instead.
     ///
-    /// <paramref name="pointCount"/> must be less than the parents' <c>Genes</c> length
-    /// (there are only <c>Genes.Length - 1</c> valid cut positions); this is not
-    /// validated. A <paramref name="pointCount"/> of 1 behaves like <c>singlePoint</c>,
-    /// and 0 returns children identical to the parents. Both parents must have the same
-    /// <c>Genes</c> length - this is validated, the same way <c>singlePoint</c> validates
-    /// it. Curry <paramref name="pointCount"/> (e.g. <c>Crossover.multiPoint 3</c>) to use
-    /// this as an <c>Options.CrossoverFn</c>.
+    /// <paramref name="pointCount"/> must be between <c>0</c> and one less than the
+    /// parents' <c>Genes</c> length (there are only <c>Genes.Length - 1</c> valid cut
+    /// positions); this is validated. A <paramref name="pointCount"/> of 1 behaves like
+    /// <c>singlePoint</c>, and 0 returns children identical to the parents - for an empty
+    /// chromosome (see this module's own remarks on empty chromosomes), 0 is the only
+    /// valid <paramref name="pointCount"/>, since there are no interior positions to cut
+    /// at all. Both parents must have the same <c>Genes</c> length - this is validated,
+    /// the same way <c>singlePoint</c> validates it. Curry <paramref name="pointCount"/>
+    /// (e.g. <c>Crossover.multiPoint 3</c>) to use this as an <c>Options.CrossoverFn</c>.
     /// </remarks>
-    /// <param name="pointCount">The number of cut points to use.</param>
+    /// <param name="pointCount">The number of cut points to use. Must be between 0 and one less than the parents' Genes length.</param>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
     /// <param name="p2">The second parent.</param>
@@ -206,12 +208,20 @@ module Crossover =
     /// </returns>
     /// <exception cref="System.ArgumentException">
     /// Thrown when <paramref name="p1"/> and <paramref name="p2"/> have different
-    /// <c>Genes</c> lengths.
+    /// <c>Genes</c> lengths, or when <paramref name="pointCount"/> is negative or exceeds
+    /// one less than the parents' <c>Genes</c> length.
     /// </exception>
     let multiPoint (pointCount: int) (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         validateEqualLength p1 p2
 
         let length = p1.Genes.Length
+        let maxPointCount = max 0 (length - 1)
+
+        if pointCount < 0 || pointCount > maxPointCount then
+            invalidArg
+                (nameof pointCount)
+                $"pointCount must be between 0 and {maxPointCount} (one less than the parents' \
+                  Genes length, {length}); got {pointCount}."
 
         let points =
             [| 1 .. length - 1 |]
@@ -384,10 +394,10 @@ module Crossover =
     /// Unlike <c>singlePoint</c>, which swaps one contiguous tail, uniform crossover mixes
     /// genes independently at every position. Like <c>singlePoint</c>, it does not preserve
     /// permutations - if the parents are permutations of the same values (as in
-    /// <c>NQueens</c>), the children generally won't be. Both parents are expected to have
-    /// the same <c>Genes</c> length; this is not validated. Curry
-    /// <paramref name="rate"/> (e.g. <c>Crossover.uniform 0.5</c>) to use this as an
-    /// <c>Options.CrossoverFn</c>.
+    /// <c>NQueens</c>), the children generally won't be. Both parents must have the same
+    /// <c>Genes</c> length - this is validated, the same way <c>singlePoint</c> validates
+    /// it. Curry <paramref name="rate"/> (e.g. <c>Crossover.uniform 0.5</c>) to use this as
+    /// an <c>Options.CrossoverFn</c>.
     /// </remarks>
     /// <param name="rate">
     /// The probability, per gene position, that the first child keeps the first parent's
@@ -402,10 +412,12 @@ module Crossover =
     /// other.
     /// </returns>
     /// <exception cref="System.ArgumentException">
-    /// Thrown when <paramref name="rate"/> is outside <c>[0, 1]</c>.
+    /// Thrown when <paramref name="rate"/> is outside <c>[0, 1]</c>, or when
+    /// <paramref name="p1"/> and <paramref name="p2"/> have different <c>Genes</c> lengths.
     /// </exception>
     let uniform (rate: float) (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         Validation.rate (nameof rate) rate
+        validateEqualLength p1 p2
 
         let c1, c2 =
             Array.zip p1.Genes p2.Genes
@@ -427,11 +439,12 @@ module Crossover =
     /// arithmetically rather than swapping or copying them outright. An
     /// <paramref name="alpha"/> of 0.5 makes both children the pointwise average of the two
     /// parents; values closer to 0 or 1 bias each child toward one parent or the other.
-    /// Both parents are expected to have the same <c>Genes</c> length; this is not
-    /// validated. Ignores <paramref name="rng"/> - blending is purely arithmetic, but still
-    /// accepts a source of randomness to match every other <c>CrossoverFn</c>'s shape. Curry
-    /// <paramref name="alpha"/> (e.g. <c>Crossover.wholeArithmeticCrossover 0.5</c>) to use
-    /// this as an <c>Options&lt;float&gt;.CrossoverFn</c>.
+    /// Both parents must have the same <c>Genes</c> length - this is validated, the same
+    /// way <c>singlePoint</c> validates it. Ignores <paramref name="rng"/> - blending is
+    /// purely arithmetic, but still accepts a source of randomness to match every other
+    /// <c>CrossoverFn</c>'s shape. Curry <paramref name="alpha"/> (e.g.
+    /// <c>Crossover.wholeArithmeticCrossover 0.5</c>) to use this as an
+    /// <c>Options&lt;float&gt;.CrossoverFn</c>.
     /// </remarks>
     /// <param name="alpha">The blend weight, typically in the range [0, 1].</param>
     /// <param name="rng">The source of randomness. Ignored.</param>
@@ -441,7 +454,13 @@ module Crossover =
     /// Two children, each gene position a weighted blend of the two parents' genes at that
     /// position.
     /// </returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="p1"/> and <paramref name="p2"/> have different
+    /// <c>Genes</c> lengths.
+    /// </exception>
     let wholeArithmeticCrossover (alpha: float) (_rng: System.Random) (p1: Chromosome<float>) (p2: Chromosome<float>) =
+        validateEqualLength p1 p2
+
         let c1, c2 =
             Array.zip p1.Genes p2.Genes
             |> Array.map (fun (x, y) -> x * alpha + y * (1.0 - alpha), x * (1.0 - alpha) + y * alpha)

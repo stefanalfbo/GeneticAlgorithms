@@ -185,7 +185,46 @@ let multiPointTests =
 
               Expect.throwsT<System.ArgumentException>
                   (fun () -> Crossover.multiPoint 3 rng p1 p2 |> ignore)
-                  "parents with different lengths should be rejected" ]
+                  "parents with different lengths should be rejected"
+
+          testCase "regression: rejects a negative pointCount"
+          <| fun _ ->
+              // Bug: pointCount flowed straight into `Array.take pointCount` unvalidated -
+              // a negative pointCount threw an unrelated ArgumentException from deep
+              // inside Array.take rather than a clear error naming pointCount.
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14; 15; 16; 17 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.multiPoint -1 rng p1 p2 |> ignore)
+                  "a negative pointCount should be rejected"
+
+          testCase "regression: rejects a pointCount that leaves no valid cut positions"
+          <| fun _ ->
+              // Bug: a pointCount at or beyond Genes.Length - 1 (there are only that many
+              // valid cut positions) made `Array.take pointCount` throw an unrelated
+              // InvalidOperationException ("the input sequence has an insufficient number
+              // of elements") instead of a clear error naming pointCount.
+              let p1 = makeChromosome [| 0; 1; 2; 3 |]
+              let p2 = makeChromosome [| 10; 11; 12; 13 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.multiPoint 4 rng p1 p2 |> ignore)
+                  "a pointCount equal to Genes.Length should be rejected"
+
+          testCase "regression: an empty chromosome only accepts a pointCount of 0"
+          <| fun _ ->
+              let p1 = makeChromosome [||]
+              let p2 = makeChromosome [||]
+
+              let c1, c2 = Crossover.multiPoint 0 rng p1 p2
+
+              Expect.isEmpty c1.Genes "pointCount 0 should still no-op for empty parents"
+              Expect.isEmpty c2.Genes "pointCount 0 should still no-op for empty parents"
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.multiPoint 1 rng p1 p2 |> ignore)
+                  "a nonzero pointCount has no valid cut positions for an empty chromosome" ]
 
 [<Tests>]
 let messySinglePointTests =
@@ -589,7 +628,26 @@ let uniformTests =
               Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
               Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
               Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
-              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's"
+
+          testCase "regression: rejects parents with different lengths via validateEqualLength, not Array.zip"
+          <| fun _ ->
+              // Bug: uniform relied on Array.zip to fail for unequal-length parents rather
+              // than validating explicitly. Array.zip does throw ArgumentException for a
+              // length mismatch, so this was never a crash risk - but its message doesn't
+              // name p1/p2 or explain the problem the way validateEqualLength's does, so
+              // this checks the message itself to confirm the clearer, shared validation
+              // path is actually used rather than Array.zip's incidental one.
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12 |]
+
+              Expect.throwsC
+                  (fun () -> Crossover.uniform 0.5 rng p1 p2 |> ignore)
+                  (fun ex ->
+                      Expect.stringContains
+                          ex.Message
+                          "Genes length"
+                          "should use validateEqualLength's clear message, not Array.zip's generic one") ]
 
 [<Tests>]
 let wholeArithmeticCrossoverTests =
@@ -660,4 +718,24 @@ let wholeArithmeticCrossoverTests =
               Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
               Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
               Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
-              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's"
+
+          testCase "regression: rejects parents with different lengths via validateEqualLength, not Array.zip"
+          <| fun _ ->
+              // Bug: wholeArithmeticCrossover relied on Array.zip to fail for
+              // unequal-length parents rather than validating explicitly. Array.zip does
+              // throw ArgumentException for a length mismatch, so this was never a crash
+              // risk - but its message doesn't name p1/p2 or explain the problem the way
+              // validateEqualLength's does, so this checks the message itself to confirm
+              // the clearer, shared validation path is actually used rather than
+              // Array.zip's incidental one.
+              let p1 = makeChromosome [| 0.0; 1.0; 2.0; 3.0 |]
+              let p2 = makeChromosome [| 10.0; 11.0 |]
+
+              Expect.throwsC
+                  (fun () -> Crossover.wholeArithmeticCrossover 0.3 rng p1 p2 |> ignore)
+                  (fun ex ->
+                      Expect.stringContains
+                          ex.Message
+                          "Genes length"
+                          "should use validateEqualLength's clear message, not Array.zip's generic one") ]
