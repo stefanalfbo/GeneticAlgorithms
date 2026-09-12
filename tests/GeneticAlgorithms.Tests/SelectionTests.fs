@@ -183,6 +183,18 @@ let boltzmannTests =
                   (fun () -> Selection.boltzmann 0.0 rng population 1 |> ignore)
                   "temperature must be positive"
 
+          testCase "regression: rejects a NaN temperature"
+          <| fun _ ->
+              // Bug: `temperature <= 0.0` silently let NaN through, since every comparison
+              // with NaN is false in IEEE 754 - including this one. That produced NaN
+              // weights (division and exp() both propagate NaN), which pickWeighted's
+              // `w + sum > u` comparison also always evaluates false for, so it
+              // deterministically fell through its recursive loop to the population's
+              // last chromosome every time, rather than throwing.
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Selection.boltzmann System.Double.NaN rng population 1 |> ignore)
+                  "a NaN temperature should be rejected"
+
           testCase "strongly favors the fittest chromosome at a low temperature"
           <| fun _ ->
               let weighted = [| makeChromosome 10.0; makeChromosome 0.0 |]

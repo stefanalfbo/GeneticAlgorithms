@@ -184,10 +184,15 @@ module Selection =
     /// <param name="n">The number of chromosomes to select.</param>
     /// <returns><paramref name="n"/> chromosomes, possibly with duplicates.</returns>
     /// <exception cref="System.ArgumentException">
-    /// Thrown when <paramref name="temperature"/> is not positive.
+    /// Thrown when <paramref name="temperature"/> is not positive, or is <c>NaN</c>. A
+    /// <c>NaN</c> temperature would otherwise pass the plain <c>temperature &lt;= 0.0</c>
+    /// check silently - every comparison with <c>NaN</c> is <c>false</c> in IEEE 754, this
+    /// one included - and go on to produce <c>NaN</c> weights, which
+    /// <c>pickWeighted</c> would then deterministically resolve to the population's last
+    /// chromosome every time, for the same reason.
     /// </exception>
     let boltzmann (temperature: float) (rng: System.Random) (population: Chromosome<'Gene> array) (n: int) =
-        if temperature <= 0.0 then
+        if System.Double.IsNaN temperature || temperature <= 0.0 then
             invalidArg "temperature" "Temperature must be positive."
 
         // Subtract the max fitness before exponentiating so every exponent is <= 0.
