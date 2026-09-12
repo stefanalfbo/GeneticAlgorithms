@@ -26,7 +26,10 @@ namespace GeneticAlgorithms
 /// swapping or copying them outright. Every strategy above preserves each parent's
 /// <c>Genes</c> length in its children; <c>messySinglePoint</c> is the exception - it's a
 /// variant of <c>singlePoint</c> built specifically to let a child's length differ from
-/// either parent's. Every strategy's two children start at <c>Age = 0</c> and
+/// either parent's. A chromosome with no genes at all is a trivial no-op for every
+/// strategy here - it produces another empty chromosome rather than being rejected, the
+/// same way an empty array is already a perfectly valid (if degenerate) permutation or
+/// gene sequence. Every strategy's two children start at <c>Age = 0</c> and
 /// <c>Fitness = 0.0</c>, regardless of either parent's values - combining two parents
 /// produces a genuinely new individual, so it is "born" rather than continuing either
 /// parent's <c>Age</c>. See <c>Chromosome.Age</c>'s own remarks for the full picture,
@@ -80,6 +83,14 @@ module Crossover =
         if Set.ofArray p1.Genes <> Set.ofArray p2.Genes then
             invalidArg (nameof p2) "p1 and p2 must be permutations of the same set of gene values."
 
+    /// Draws a random interior cut point in [1, length - 1], or 0 when length is 0 - there
+    /// is no interior position to cut an empty array at, and 0 is the only cut point that
+    /// keeps both the "head" and "tail" slices empty, making the no-op for an empty
+    /// chromosome fall out of the normal head/tail-splitting logic rather than needing its
+    /// own special case.
+    let private cutPoint (rng: System.Random) (length: int) =
+        if length = 0 then 0 else rng.Next(1, length)
+
     /// <summary>
     /// Combines two parents into two children by picking a single random cut point and
     /// swapping the tails: the first child gets the first parent's head and the second
@@ -96,7 +107,10 @@ module Crossover =
     /// <paramref name="p1"/> is the longer parent, crashing with an unrelated "array too
     /// short" exception instead) would otherwise contradict this module's own guarantee that
     /// every strategy besides <c>messySinglePoint</c> preserves parent length. Use
-    /// <c>messySinglePoint</c> instead if children are allowed to differ in length.
+    /// <c>messySinglePoint</c> instead if children are allowed to differ in length. Two
+    /// empty parents produce two empty children - there is no interior position to cut an
+    /// empty array at, so the cut point is 0 in that case, keeping both the head and tail
+    /// slices empty.
     /// </remarks>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
@@ -113,7 +127,7 @@ module Crossover =
     let singlePoint (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         validateEqualLength p1 p2
 
-        let crossoverPoint = rng.Next(1, p1.Genes.Length)
+        let crossoverPoint = cutPoint rng p1.Genes.Length
 
         let parent1Head = p1.Genes |> Array.take crossoverPoint
         let parent1Tail = p1.Genes |> Array.skip crossoverPoint
@@ -143,7 +157,10 @@ module Crossover =
     /// permutations of the same values (as in <c>NQueens</c>), the children generally
     /// won't be, and generally won't even be the same length as the permutation itself.
     /// Use <c>orderOneCrossover</c> or <c>cycleCrossover</c> for permutation genotypes
-    /// instead.
+    /// instead. An empty parent has no interior position to cut at, so its own cut point is
+    /// always 0 - that parent contributes nothing to either child, but the other parent's
+    /// (possibly non-empty) cut still applies independently, exactly as this function's own
+    /// "cuts are chosen independently" contract already implies.
     /// </remarks>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
@@ -153,8 +170,8 @@ module Crossover =
     /// lengths may differ from the parents' and from each other.
     /// </returns>
     let messySinglePoint (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
-        let cut1 = rng.Next(1, p1.Genes.Length)
-        let cut2 = rng.Next(1, p2.Genes.Length)
+        let cut1 = cutPoint rng p1.Genes.Length
+        let cut2 = cutPoint rng p2.Genes.Length
 
         let c1Genes = Array.append p1.Genes.[0 .. cut1 - 1] p2.Genes.[cut2 ..]
         let c2Genes = Array.append p2.Genes.[0 .. cut2 - 1] p1.Genes.[cut1 ..]
@@ -235,12 +252,14 @@ module Crossover =
     /// represent a permutation (each row used exactly once) rather than independent
     /// values.
     ///
-    /// Both parents must be permutations of the same, non-empty set of gene values - the
-    /// same length, no duplicate genes in either parent, and the same distinct values in
-    /// both - this is validated (empty parents are not; see <c>validatePermutation</c>'s
-    /// own remarks for why). Without it, a length mismatch or duplicate-containing "almost
+    /// Both parents must be permutations of the same set of gene values - the same length,
+    /// no duplicate genes in either parent, and the same distinct values in both - this is
+    /// validated. Without it, a length mismatch or duplicate-containing "almost
     /// permutation" could silently produce a wrong-length child instead of the valid
-    /// permutation this strategy promises.
+    /// permutation this strategy promises. Two empty parents are a trivial permutation of
+    /// the empty set and produce two empty children - there is no interior slice to pick
+    /// from an empty array, so this is handled directly rather than by drawing a
+    /// meaningless slice from a range that doesn't exist.
     /// </remarks>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
@@ -257,24 +276,27 @@ module Crossover =
     let orderOneCrossover (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
         validatePermutation p1 p2
 
-        let lim = p1.Genes.Length - 1
+        if p1.Genes.Length = 0 then
+            newborn p1 [||], newborn p2 [||]
+        else
+            let lim = p1.Genes.Length - 1
 
-        let i1, i2 =
-            let a = rng.Next(1, lim + 1)
-            let b = rng.Next(1, lim + 1)
-            if a <= b then a, b else b, a
+            let i1, i2 =
+                let a = rng.Next(1, lim + 1)
+                let b = rng.Next(1, lim + 1)
+                if a <= b then a, b else b, a
 
-        let slice1 = p1.Genes.[i1..i2]
-        let slice1Set = System.Collections.Generic.HashSet<'Gene>(slice1)
-        let p2Contrib = p2.Genes |> Array.filter (slice1Set.Contains >> not)
-        let head1, tail1 = Array.splitAt i1 p2Contrib
+            let slice1 = p1.Genes.[i1..i2]
+            let slice1Set = System.Collections.Generic.HashSet<'Gene>(slice1)
+            let p2Contrib = p2.Genes |> Array.filter (slice1Set.Contains >> not)
+            let head1, tail1 = Array.splitAt i1 p2Contrib
 
-        let slice2 = p2.Genes.[i1..i2]
-        let slice2Set = System.Collections.Generic.HashSet<'Gene>(slice2)
-        let p1Contrib = p1.Genes |> Array.filter (slice2Set.Contains >> not)
-        let head2, tail2 = Array.splitAt i1 p1Contrib
+            let slice2 = p2.Genes.[i1..i2]
+            let slice2Set = System.Collections.Generic.HashSet<'Gene>(slice2)
+            let p1Contrib = p1.Genes |> Array.filter (slice2Set.Contains >> not)
+            let head2, tail2 = Array.splitAt i1 p1Contrib
 
-        newborn p1 (Array.concat [ head1; slice1; tail1 ]), newborn p2 (Array.concat [ head2; slice2; tail2 ])
+            newborn p1 (Array.concat [ head1; slice1; tail1 ]), newborn p2 (Array.concat [ head2; slice2; tail2 ])
 
     /// <summary>
     /// Combines two permutation-encoded parents into two children using cycle crossover

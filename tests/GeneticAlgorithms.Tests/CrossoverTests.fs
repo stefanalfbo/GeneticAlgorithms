@@ -75,7 +75,22 @@ let singlePointTests =
               Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
               Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
               Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
-              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's"
+
+          testCase "regression: two empty parents produce two empty children rather than crashing"
+          <| fun _ ->
+              // Bug: the cut point was drawn via `rng.Next(1, p1.Genes.Length)`, which
+              // throws ArgumentOutOfRangeException when Genes.Length is 0 (minValue 1 >
+              // maxValue 0) - an empty chromosome is a legitimate, if degenerate, value
+              // (Chromosome.Size is explicitly tested as 0 for one), so this should no-op
+              // rather than crash with an unrelated exception.
+              let p1 = makeChromosome [||]
+              let p2 = makeChromosome [||]
+
+              let c1, c2 = Crossover.singlePoint rng p1 p2
+
+              Expect.isEmpty c1.Genes "the first child should be empty"
+              Expect.isEmpty c2.Genes "the second child should be empty" ]
 
 [<Tests>]
 let multiPointTests =
@@ -239,7 +254,33 @@ let messySinglePointTests =
               Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
               Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
               Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
-              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's"
+
+          testCase "regression: two empty parents produce two empty children rather than crashing"
+          <| fun _ ->
+              // Bug: each parent's cut point was drawn independently via
+              // `rng.Next(1, length)`, which throws ArgumentOutOfRangeException when that
+              // parent's Genes.Length is 0.
+              let p1 = makeChromosome [||]
+              let p2 = makeChromosome [||]
+
+              let c1, c2 = Crossover.messySinglePoint rng p1 p2
+
+              Expect.isEmpty c1.Genes "the first child should be empty"
+              Expect.isEmpty c2.Genes "the second child should be empty"
+
+          testCase "regression: an empty parent contributes nothing, but the other parent's independent cut still applies"
+          <| fun _ ->
+              // messySinglePoint explicitly allows differently-sized parents, so an empty
+              // p1 alongside a non-empty p2 is a legitimate mixed-length input under this
+              // function's own contract, not just a degenerate edge case.
+              let p1 = makeChromosome [||]
+              let p2 = makeChromosome [| 10; 11; 12; 13; 14 |]
+
+              let c1, c2 = Crossover.messySinglePoint rng p1 p2
+
+              Expect.all c1.Genes (fun gene -> Array.contains gene p2.Genes) "the first child can only contain genes from p2, since p1 contributed none"
+              Expect.all c2.Genes (fun gene -> Array.contains gene p2.Genes) "the second child can only contain genes from p2, since p1 contributed none" ]
 
 [<Tests>]
 let orderOneCrossoverTests =
@@ -324,7 +365,21 @@ let orderOneCrossoverTests =
 
               Expect.throwsT<System.ArgumentException>
                   (fun () -> Crossover.orderOneCrossover rng p1 p2 |> ignore)
-                  "parents with disjoint gene sets should be rejected" ]
+                  "parents with disjoint gene sets should be rejected"
+
+          testCase "regression: two empty parents produce two empty children rather than crashing"
+          <| fun _ ->
+              // Bug: `lim = p1.Genes.Length - 1` is -1 for an empty chromosome, so
+              // `rng.Next(1, lim + 1)` = `rng.Next(1, 0)` throws
+              // ArgumentOutOfRangeException. An empty chromosome is trivially a valid
+              // permutation of the empty set, so this should no-op rather than crash.
+              let p1 = makeChromosome [||]
+              let p2 = makeChromosome [||]
+
+              let c1, c2 = Crossover.orderOneCrossover rng p1 p2
+
+              Expect.isEmpty c1.Genes "the first child should be empty"
+              Expect.isEmpty c2.Genes "the second child should be empty" ]
 
 [<Tests>]
 let cycleCrossoverTests =

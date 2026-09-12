@@ -23,6 +23,9 @@ namespace GeneticAlgorithms
 /// drives a needed value to extinction across the entire population, no amount of
 /// reordering can bring it back. <c>randomReset</c> is the general-purpose strategy that
 /// can, by replacing genes with freshly generated values instead of just reordering them.
+/// A chromosome with no genes at all is a no-op for every strategy here - it is returned
+/// unchanged (or, equivalently, produces another empty chromosome) rather than being
+/// rejected, the same policy <c>Crossover</c> follows for empty parents.
 /// </remarks>
 module Mutation =
 
@@ -199,7 +202,8 @@ module Mutation =
     /// themselves. Only makes sense for real-valued genotypes, so it works on
     /// <c>Chromosome&lt;float&gt;</c> specifically rather than any <c>'Gene</c> type, and
     /// (like <c>flip</c>) always mutates every gene - there is no per-gene rate to
-    /// configure.
+    /// configure. A chromosome with no genes is a no-op - it is returned unchanged, since
+    /// there is no mean or variance to fit a distribution to and nothing to resample.
     /// </remarks>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="chromosome">The chromosome to mutate.</param>
@@ -208,9 +212,12 @@ module Mutation =
     /// distribution fitted to the original genes.
     /// </returns>
     let gaussian (rng: System.Random) (chromosome: Chromosome<float>) =
-        let genes = chromosome.Genes
-        let mu = Array.average genes
-        let variance = genes |> Array.averageBy (fun x -> (mu - x) * (mu - x))
+        if chromosome.Genes.Length = 0 then
+            chromosome
+        else
+            let genes = chromosome.Genes
+            let mu = Array.average genes
+            let variance = genes |> Array.averageBy (fun x -> (mu - x) * (mu - x))
 
-        { chromosome with
-            Genes = genes |> Array.map (fun _ -> nextGaussian rng mu variance) }
+            { chromosome with
+                Genes = genes |> Array.map (fun _ -> nextGaussian rng mu variance) }

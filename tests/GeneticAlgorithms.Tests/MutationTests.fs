@@ -400,4 +400,18 @@ let gaussianTests =
 
               Expect.isTrue
                   (abs (actualMean - expectedMean) < 5.0)
-                  $"resampled mean {actualMean} should be close to the original mean {expectedMean}" ]
+                  $"resampled mean {actualMean} should be close to the original mean {expectedMean}"
+
+          testCase "regression: a chromosome with no genes is returned unchanged rather than crashing"
+          <| fun _ ->
+              // Bug: Array.average [||] throws InvalidOperationException ("the input
+              // array was empty") - an empty chromosome is a legitimate, if degenerate,
+              // value, so this should no-op rather than crash trying to fit a distribution
+              // to zero genes.
+              let chromosome = makeFloatChromosome [||]
+
+              let result = Mutation.gaussian rng chromosome
+
+              Expect.isEmpty result.Genes "the result should still have no genes"
+              Expect.equal result.Fitness chromosome.Fitness "fitness should be unchanged"
+              Expect.equal result.Age chromosome.Age "age should be unchanged" ]
