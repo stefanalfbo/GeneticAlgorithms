@@ -155,7 +155,22 @@ let multiPointTests =
               Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
               Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
               Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
-              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's"
+
+          testCase "regression: rejects parents with different lengths"
+          <| fun _ ->
+              // Bug: multiPoint drew its cut points from p1's length alone and never
+              // checked p2's, so a shorter p2 could crash with an unrelated
+              // IndexOutOfRangeException while segmenting it, and a longer p2 would have
+              // its extra tail genes silently dropped - producing a child whose length
+              // matched neither parent, breaking this module's own guarantee that every
+              // strategy besides messySinglePoint preserves parent length.
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 10; 11; 12 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.multiPoint 3 rng p1 p2 |> ignore)
+                  "parents with different lengths should be rejected" ]
 
 [<Tests>]
 let messySinglePointTests =
@@ -277,7 +292,39 @@ let orderOneCrossoverTests =
               Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
               Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
               Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
-              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's"
+
+          testCase "regression: rejects parents with different lengths"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 7; 6; 5 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.orderOneCrossover rng p1 p2 |> ignore)
+                  "parents with different lengths should be rejected"
+
+          testCase "regression: rejects a parent with duplicate genes"
+          <| fun _ ->
+              // Bug: a duplicate-containing p1 could make slice1Set over- or under-filter
+              // p2's contribution, so Array.splitAt could receive fewer elements than the
+              // cut index required (crashing), or - for two same-length, same-value-set but
+              // duplicate-containing "permutations" - silently produce a child longer than
+              // either parent instead of throwing at all.
+              let p1 = makeChromosome [| 0; 0; 1; 2; 3; 4; 5; 6 |]
+              let p2 = makeChromosome [| 6; 5; 4; 3; 2; 1; 0; 0 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.orderOneCrossover rng p1 p2 |> ignore)
+                  "a parent with duplicate genes should be rejected"
+
+          testCase "regression: rejects parents that are not permutations of the same gene set"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3 |]
+              let p2 = makeChromosome [| 4; 5; 6; 7 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.orderOneCrossover rng p1 p2 |> ignore)
+                  "parents with disjoint gene sets should be rejected" ]
 
 [<Tests>]
 let cycleCrossoverTests =
@@ -361,7 +408,42 @@ let cycleCrossoverTests =
               Expect.equal c1.Age 0 "the first child should start at Age 0, not inherit p1's Age"
               Expect.equal c2.Age 0 "the second child should start at Age 0, not inherit p2's Age"
               Expect.equal c1.Fitness 0.0 "the first child's Fitness should be reset, not inherit p1's"
-              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's" ]
+              Expect.equal c2.Fitness 0.0 "the second child's Fitness should be reset, not inherit p2's"
+
+          testCase "regression: rejects parents with different lengths"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3; 4; 5; 6; 7 |]
+              let p2 = makeChromosome [| 7; 6; 5 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.cycleCrossover rng p1 p2 |> ignore)
+                  "parents with different lengths should be rejected"
+
+          testCase "regression: rejects parents that are not permutations of the same gene set"
+          <| fun _ ->
+              let p1 = makeChromosome [| 0; 1; 2; 3 |]
+              let p2 = makeChromosome [| 4; 5; 6; 7 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.cycleCrossover rng p1 p2 |> ignore)
+                  "parents with disjoint gene sets should be rejected"
+
+          testCase "regression: rejects duplicate-containing \"permutations\" instead of recursing forever"
+          <| fun _ ->
+              // Bug: cycle-tracing follows `next = indexInP2.[p1.Genes.[idx]]` and only
+              // stops once `next` returns to the cycle's starting index. With a duplicate
+              // gene value, later occurrences overwrite indexInP2's earlier entries, so
+              // `next` can settle into a loop between positions that never revisits the
+              // start - unbounded recursion with no base case, which crashes the whole
+              // process via StackOverflowException rather than throwing a catchable
+              // exception. This must be validated before cycle-tracing ever begins; there
+              // is no way to recover from it afterward.
+              let p1 = makeChromosome [| 0; 0 |]
+              let p2 = makeChromosome [| 0; 0 |]
+
+              Expect.throwsT<System.ArgumentException>
+                  (fun () -> Crossover.cycleCrossover rng p1 p2 |> ignore)
+                  "duplicate-containing input should be rejected before cycle-tracing begins" ]
 
 [<Tests>]
 let uniformTests =

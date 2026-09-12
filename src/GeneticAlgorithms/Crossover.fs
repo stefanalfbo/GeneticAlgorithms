@@ -44,6 +44,42 @@ module Crossover =
             Fitness = 0.0
             Age = 0 }
 
+    /// Validates that both parents have the same Genes length - shared by every strategy
+    /// that assumes equal-length parents but doesn't need a full permutation check.
+    /// Without this, a length mismatch can silently produce a wrong-length child (if the
+    /// operation happens not to index out of bounds) or crash with an unrelated exception
+    /// (if it does), instead of a clear, immediate error naming the actual problem.
+    let private validateEqualLength (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        if p1.Genes.Length <> p2.Genes.Length then
+            invalidArg
+                (nameof p2)
+                $"Both parents must have the same Genes length to preserve it in the children; \
+                  got {p1.Genes.Length} and {p2.Genes.Length}. Use messySinglePoint instead if \
+                  children are allowed to differ in length."
+
+    /// Validates that both parents are permutations of the exact same set of gene values -
+    /// the same length, no duplicate genes in either parent, and the same distinct value
+    /// set - the precondition every permutation-based strategy (orderOneCrossover,
+    /// cycleCrossover) relies on to stay well-defined. Without this, a non-permutation or
+    /// mismatched input can silently produce a wrong-length child, throw an unrelated
+    /// exception partway through, or - for cycleCrossover specifically, whose cycle-tracing
+    /// recursion assumes a bijection between p1's and p2's positions - recurse without ever
+    /// terminating.
+    let private validatePermutation (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        if p1.Genes.Length <> p2.Genes.Length then
+            invalidArg
+                (nameof p2)
+                $"Both parents must have the same Genes length; got {p1.Genes.Length} and {p2.Genes.Length}."
+
+        if Array.distinct p1.Genes |> Array.length <> p1.Genes.Length then
+            invalidArg (nameof p1) "p1 must be a permutation: every gene value must appear exactly once."
+
+        if Array.distinct p2.Genes |> Array.length <> p2.Genes.Length then
+            invalidArg (nameof p2) "p2 must be a permutation: every gene value must appear exactly once."
+
+        if Set.ofArray p1.Genes <> Set.ofArray p2.Genes then
+            invalidArg (nameof p2) "p1 and p2 must be permutations of the same set of gene values."
+
     /// <summary>
     /// Combines two parents into two children by picking a single random cut point and
     /// swapping the tails: the first child gets the first parent's head and the second
@@ -75,12 +111,7 @@ module Crossover =
     /// <c>Genes</c> lengths.
     /// </exception>
     let singlePoint (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
-        if p1.Genes.Length <> p2.Genes.Length then
-            invalidArg
-                (nameof p2)
-                $"Both parents must have the same Genes length to preserve it in the children; \
-                  got {p1.Genes.Length} and {p2.Genes.Length}. Use messySinglePoint instead if \
-                  children are allowed to differ in length."
+        validateEqualLength p1 p2
 
         let crossoverPoint = rng.Next(1, p1.Genes.Length)
 
@@ -143,10 +174,10 @@ module Crossover =
     /// <paramref name="pointCount"/> must be less than the parents' <c>Genes</c> length
     /// (there are only <c>Genes.Length - 1</c> valid cut positions); this is not
     /// validated. A <paramref name="pointCount"/> of 1 behaves like <c>singlePoint</c>,
-    /// and 0 returns children identical to the parents. Both parents are expected to have
-    /// the same <c>Genes</c> length; this is not validated either. Curry
-    /// <paramref name="pointCount"/> (e.g. <c>Crossover.multiPoint 3</c>) to use this as
-    /// an <c>Options.CrossoverFn</c>.
+    /// and 0 returns children identical to the parents. Both parents must have the same
+    /// <c>Genes</c> length - this is validated, the same way <c>singlePoint</c> validates
+    /// it. Curry <paramref name="pointCount"/> (e.g. <c>Crossover.multiPoint 3</c>) to use
+    /// this as an <c>Options.CrossoverFn</c>.
     /// </remarks>
     /// <param name="pointCount">The number of cut points to use.</param>
     /// <param name="rng">The source of randomness.</param>
@@ -156,7 +187,13 @@ module Crossover =
     /// Two children, with contiguous segments alternately taken from each parent between
     /// the chosen cut points.
     /// </returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="p1"/> and <paramref name="p2"/> have different
+    /// <c>Genes</c> lengths.
+    /// </exception>
     let multiPoint (pointCount: int) (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        validateEqualLength p1 p2
+
         let length = p1.Genes.Length
 
         let points =
@@ -198,8 +235,12 @@ module Crossover =
     /// represent a permutation (each row used exactly once) rather than independent
     /// values.
     ///
-    /// Both parents are expected to have the same, non-empty <c>Genes</c> length; this is
-    /// not validated.
+    /// Both parents must be permutations of the same, non-empty set of gene values - the
+    /// same length, no duplicate genes in either parent, and the same distinct values in
+    /// both - this is validated (empty parents are not; see <c>validatePermutation</c>'s
+    /// own remarks for why). Without it, a length mismatch or duplicate-containing "almost
+    /// permutation" could silently produce a wrong-length child instead of the valid
+    /// permutation this strategy promises.
     /// </remarks>
     /// <param name="rng">The source of randomness.</param>
     /// <param name="p1">The first parent.</param>
@@ -209,7 +250,13 @@ module Crossover =
     /// out with <paramref name="p2"/>'s remaining genes in order, and the second the other
     /// way around.
     /// </returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="p1"/> and <paramref name="p2"/> are not permutations of
+    /// the same set of gene values.
+    /// </exception>
     let orderOneCrossover (rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        validatePermutation p1 p2
+
         let lim = p1.Genes.Length - 1
 
         let i1, i2 =
@@ -247,11 +294,15 @@ module Crossover =
     /// chromosome's genes represent a permutation (each row used exactly once) rather than
     /// independent values.
     ///
-    /// Both parents are expected to have the same, non-empty <c>Genes</c> length, and to be
-    /// permutations of the same gene set (every value appearing exactly once); this is not
-    /// validated. Ignores <paramref name="rng"/> - which parent contributes each cycle
-    /// alternates deterministically, but still accepts a source of randomness to match every
-    /// other <c>CrossoverFn</c>'s shape.
+    /// Both parents must be permutations of the same, non-empty gene set - the same
+    /// length, no duplicate genes in either parent, and the same distinct values in both -
+    /// this is validated (empty parents are not; see <c>validatePermutation</c>'s own
+    /// remarks for why). Without it, a duplicate-containing "almost permutation" can make
+    /// the cycle-tracing recursion below loop back to a position it has already visited
+    /// without ever returning to its start, recursing without ever terminating. Ignores
+    /// <paramref name="rng"/> - which parent contributes each cycle alternates
+    /// deterministically, but still accepts a source of randomness to match every other
+    /// <c>CrossoverFn</c>'s shape.
     /// </remarks>
     /// <param name="rng">The source of randomness. Ignored.</param>
     /// <param name="p1">The first parent.</param>
@@ -261,7 +312,13 @@ module Crossover =
     /// whichever parent alternation lands on (starting with <paramref name="p1"/> for the
     /// first cycle), and the second child copies the other parent for that same cycle.
     /// </returns>
+    /// <exception cref="System.ArgumentException">
+    /// Thrown when <paramref name="p1"/> and <paramref name="p2"/> are not permutations of
+    /// the same set of gene values.
+    /// </exception>
     let cycleCrossover (_rng: System.Random) (p1: Chromosome<'Gene>) (p2: Chromosome<'Gene>) =
+        validatePermutation p1 p2
+
         let length = p1.Genes.Length
         let indexInP2 = System.Collections.Generic.Dictionary<'Gene, int>(length)
 
