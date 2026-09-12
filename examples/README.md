@@ -18,6 +18,9 @@ examples/
   MultipleObjectives/
     csharp/
     fsharp/
+  Mutation/
+    csharp/
+    fsharp/
   NQueens/
     csharp/
     fsharp/
@@ -217,6 +220,22 @@ Run the C# version:
 
 ```powershell
 dotnet run --project examples/TravelingSalesman/csharp
+```
+
+### Mutation
+
+Compares two of the library's mutation strategies (`scramble`, `scrambleSlice`) side by side on a single-machine weighted tardiness scheduling problem: the same problem is run once per strategy, with every other setting held fixed, and the best (lowest) cost at each generation is printed in a comparison table so the effect of the mutation strategy alone is visible. Unlike the OneMax-style problem behind the `Reinsertion` example, this one is genuinely order-dependent - reordering the same jobs changes the outcome - which is essential for telling `scramble`'s full reorder apart from `scrambleSlice`'s smaller, more local one.
+
+Run the F# version:
+
+```powershell
+dotnet run --project examples/Mutation/fsharp
+```
+
+Run the C# version:
+
+```powershell
+dotnet run --project examples/Mutation/csharp
 ```
 
 ## Notes
